@@ -782,6 +782,26 @@ Chart.defaults.borderColor=gridC;
 Chart.defaults.font.family="'Space Grotesk',sans-serif";
 Chart.defaults.font.size=11;
 
+
+const MO_OPS_C=['Dic-25','Ene-26','Feb-26','Mar-26','Abr-26'];
+const MO_OPS_S=['Dic-25','Ene-26','Feb-26','Mar-26','Abr-26'];
+const OPS_S={
+  installed:[19.3858,19.4818,19.6618,25.3674,28.6444],
+  contracted:[15.6158,15.7118,15.8918,20.4274,23.2544],
+  connectors:[718,723,729,836,904],
+  irr:[0.2208,0.2205,0.2206,0.2308,0.2209],
+  throughput:[2094.3706,2127.144,2116.1611,2493.3847,2444.9934],
+  utilization:[0.2154,0.1969,0.2084,0.2000,0.1758],
+  revenues:[9712384.816,10200185.35,10133778.338,12096766.996,12179020.289],
+  revPerKwh:[7.4152,7.3758,7.3238,7.3648,7.3045],
+  gpPerKwh:[-5.7898,1.5845,1.4194,1.1545,1.2217],
+  gpMargin:[-0.7808,0.2595,0.1938,0.1568,0.1672],
+  revPerConn:[15766.8585,16425.4192,16162.3259,16480.609,15534.4647],
+  uptime:[0.987,0.9919,0.9806,0.9909,0.9827],
+  capex:[13196.4205,4941.4491,9685.9593,13010.5409,11678.4468],
+  evRatio:[6.5185,6.7778,7.3472,5.56,5.386],
+};
+
 // ══ DATA — loaded from data.json ══
 let MO = [];
 let D  = {};
@@ -857,7 +877,10 @@ async function loadData() {
     MO_OPS_C.length = 0;
     opsMonths.forEach(m => MO_OPS_C.push(m));
 
-    // Map ops keys to OPS_S
+    // Map ops keys to OPS_S (update in place so global refs work)
+    if(ops && Object.keys(ops).length>0){
+    MO_OPS_S.length=0; opsMonths.forEach(m=>MO_OPS_S.push(m));
+    MO_OPS_C.length=0; opsMonths.forEach(m=>MO_OPS_C.push(m));
     OPS_S.installed   = ops.inst_active   || [];
     OPS_S.contracted  = ops.cont_active   || [];
     OPS_S.connectors  = (ops.conn_active  || []).map(v=>v?Math.round(v):null);
@@ -872,6 +895,7 @@ async function loadData() {
     OPS_S.uptime      = ops.uptime_total  || [];
     OPS_S.capex       = ops.capex_total   || [];
     OPS_S.evRatio     = ops.evr_anchored  || [];
+    } // end ops update
 
     // Update meta
     const meta = json.meta || {};
@@ -1853,27 +1877,8 @@ window.addEventListener('scroll',()=>{
 
 // ── OPS SUMMARY ──
 function buildOpsSummary(){
-  const MO_OPS_S=['Dic-25','Ene-26','Feb-26','Mar-26','Abr-26'];
 
   // Data indexed [Dic-25, Ene-26, Feb-26, Mar-26]
-  const OPS_S={
-    // Active row (idx 0) for metrics 1-6
-    installed:   [19.3858,19.4818,19.6618,25.3674,28.6444],
-    contracted:  [15.6158,15.7118,15.8918,20.4274,23.2544],
-    connectors:  [718,723,729,836,904],
-    irr:         [0.2208,0.2205,0.2206,0.2308,0.2209],
-    throughput:  [2094.3706,2127.144,2116.1611,2493.3847,2444.9934],
-    utilization: [0.2154,0.1969,0.2084,0.2,0.1758],
-    // Total row for metrics 7-14
-    revenues:    [9712384.8159,10200185.3497,10133778.3379,12096766.9961,12179020.2888],
-    revPerKwh:   [7.4152,7.3758,7.3238,7.3648,7.3045],
-    gpPerKwh:    [-5.7898,1.5845,1.4194,1.1545,1.2217],
-    gpMargin:    [-0.7808,0.2595,0.1938,0.1568,0.1672],
-    revPerConn:  [15766.8585,16425.4192,16162.3259,16480.609,15534.4647],
-    uptime:      [0.987,0.9919,0.9806,0.9909,0.9827],
-    capex:       [13196.4205,4941.4491,9685.9593,13010.5409,11678.4468],
-    evRatio:     [6.5185,6.7778,7.3472,5.56,5.386],
-  };
 
   function fmtS(v,fmt){
     if(v===null||v===undefined) return '—';
@@ -2063,8 +2068,6 @@ const OPS_CHART_DATA={
        {label:'Pure Dest.', data:[7.5,7.7,8.5,6.5,6.1],color:FOREST},
      ]},
 };
-const MO_OPS_C=['Dic-25','Ene-26','Feb-26','Mar-26','Abr-26'];
-
 function openOpsChart(num){
   const cfg=OPS_CHART_DATA[num];
   if(!cfg)return;
