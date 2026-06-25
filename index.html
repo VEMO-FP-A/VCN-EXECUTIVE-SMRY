@@ -608,7 +608,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-06-24 09:32</div>
+  <div>build 2026-06-25 13:06</div>
 </footer>
 
 <script>
@@ -758,6 +758,7 @@ function getVal(ki, idx){
 
 function renderKPICards(){
   const el=document.getElementById('kpi-cards-grid');
+  if(!el) return;
   el.innerHTML = KPI13.map((ki,i)=>{
     const A=arrCand(ki.keys), B=barrCand(ki.keys);
     const val = getVal(ki, CUR);
@@ -1003,20 +1004,23 @@ function renderFinKPISection(){
           grid: { display:false }
         };
       }
-      const ch = new Chart(canvas, {
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { intersect:false, mode:'index' },
-          plugins: {
-            legend: { display:true, position:'bottom', labels:{ font:{family:'Space Grotesk',size:10}, boxWidth:12, padding:8 } },
-            tooltip: { enabled:true }
-          },
-          scales
-        }
-      });
-      __FIN_KPI_CHARTS[fi.k] = ch;
+      try {
+        const ch = new Chart(canvas, {
+          type: 'bar',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect:false, mode:'index' },
+            plugins: {
+              legend: { display:true, position:'bottom', labels:{ font:{family:'Space Grotesk',size:10}, boxWidth:12, padding:8 } },
+              tooltip: { enabled:true }
+            },
+            scales
+          }
+        });
+        __FIN_KPI_CHARTS[fi.k] = ch;
+      } catch(chartErr){ console.warn('FinKPI chart error', fi.k, chartErr); }
     });
   }, 0);
 }
