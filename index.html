@@ -608,7 +608,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-06-29 17:12</div>
+  <div>build 2026-06-29 17:34</div>
 </footer>
 
 <script>
@@ -1552,6 +1552,7 @@ function renderRatioCharts(containerId, chartDefs){
     const stat = mlbl(CUR)+': '+fmt(val);
     const B = barrCand(cd.keys || [cd.k]);
     const hasBud = B.length && B.some(v=>v!=null&&v!==0);
+    const isCostKey = /energy_cost|cogs|opex|corporate_exp|sga/.test(cd.k);
     html += '<div class="chart-card">'+
       '<div class="chart-hd"><span class="t">'+cd.l+'</span><span class="stats">'+stat+'</span>'+
       '<div class="chart-toggles">'+
@@ -1602,7 +1603,10 @@ function renderRatioCharts(containerId, chartDefs){
       const showBud = card?.querySelector('[data-toggle="bud"]')?.checked ?? false;
       const showProj = card?.querySelector('[data-toggle="proj"]')?.checked ?? false;
       if(ratioCharts[i]) ratioCharts[i].destroy();
-      ratioCharts[i] = makeLineChart(canvasId, cd.l, A, {budget: showBud?B:null, projection: showProj, yfmt});
+      const _isCost = /energy_cost|cogs|opex|corporate_exp/.test(cd.k);
+      const _A = _isCost ? (A||[]).map(v=>v==null?null:Math.abs(+v||0)) : A;
+      const _B = _isCost ? (B||[]).map(v=>v==null?null:Math.abs(+v||0)) : B;
+      ratioCharts[i] = makeLineChart(canvasId, cd.l, _A, {budget: showBud?_B:null, projection: showProj, yfmt});
     } catch(e){ console.warn('chart render failed', cd.l, e); }
   }
   chartDefs.forEach((cd,i)=> buildChart(cd, i));
@@ -1617,7 +1621,39 @@ function renderRatioCharts(containerId, chartDefs){
 
 // Mapeo charts por sub-tab
 const RATIO_CHARTS = {
-  main: [], op: [], cost: [], fin: [], bs: [],
+  main: [
+    {k:'revenue',       l:'Revenue',            type:'num', agg:'sum', fmt:'n1'},
+    {k:'gross_profit',  l:'Gross Profit',        type:'num', agg:'sum', fmt:'n1'},
+    {k:'ebitda',        l:'EBITDA',              type:'num', agg:'sum', fmt:'n1'},
+    {k:'net_income',    l:'Net Income',          type:'num', agg:'sum', fmt:'n1'},
+    {k:'total_connectors', l:'Conectores',       type:'num', agg:'eop', fmt:'int'},
+    {k:'utilization',   l:'Utilización',         type:'pct', agg:'avg'},
+  ],
+  op: [
+    {k:'total_connectors', l:'Conectores Instalados', type:'num', agg:'eop', fmt:'int'},
+    {k:'sessions_total',   l:'Throughput (kWh)',       type:'num', agg:'sum', fmt:'k'},
+    {k:'utilization',      l:'Tasa de Utilización',    type:'pct', agg:'avg'},
+    {k:'uptime_pct',       l:'Uptime de Red',           type:'pct', agg:'avg'},
+    {k:'rev_per_kwh',      l:'Revenue / kWh',           type:'num', agg:'avg', fmt:'n2'},
+    {k:'gross_profit_kwh', l:'GP / kWh',                type:'num', agg:'avg', fmt:'n2'},
+  ],
+  cost: [
+    {k:'energy_costs',        l:'Costo de Energía',    type:'num', agg:'sum', fmt:'n1'},
+    {k:'cogs_total',          l:'COGS Total',           type:'num', agg:'sum', fmt:'n1'},
+    {k:'opex',                l:'Opex (O&M + Renta)',   type:'num', agg:'sum', fmt:'n1'},
+    {k:'corporate_expenses',  l:'SG&A',                 type:'num', agg:'sum', fmt:'n1'},
+    {k:'gross_margin',        l:'GP Margin %',          type:'pct', agg:'avg'},
+    {k:'ebitda_margin',       l:'EBITDA Margin %',      type:'pct', agg:'avg'},
+  ],
+  fin: [
+    {k:'revenue',       l:'Revenue',            type:'num', agg:'sum', fmt:'n1'},
+    {k:'gross_profit',  l:'Gross Profit',        type:'num', agg:'sum', fmt:'n1'},
+    {k:'ebitda',        l:'EBITDA',              type:'num', agg:'sum', fmt:'n1'},
+    {k:'net_income',    l:'Net Income',          type:'num', agg:'sum', fmt:'n1'},
+    {k:'gross_margin',  l:'GP Margin %',         type:'pct', agg:'avg'},
+    {k:'ebitda_margin', l:'EBITDA Margin %',     type:'pct', agg:'avg'},
+  ],
+  bs: [],
 };
 
 function renderAllRatios(){
@@ -1990,8 +2026,8 @@ function renderPLCharts(){
     const showProj=card.querySelector('[data-toggle="proj"]').checked;
     if(charts[i]) charts[i].destroy();
     const viewK = plViewKey(ln.k);
-    let A2 = absMap(arr(viewK) || arr(ln.k));
-    let B2 = absMap(barr(viewK) || barr(ln.k));
+    let A2 = absMap(arr(viewK).length ? arr(viewK) : arr(ln.k));
+    let B2 = absMap(barr(viewK).length ? barr(viewK) : barr(ln.k));
     let mArr = null;
     if(ln.marginKey){
       const raw = arr(ln.marginKey);
