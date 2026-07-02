@@ -606,7 +606,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-02 12:18</div>
+  <div>build 2026-07-02 12:35</div>
 </footer>
 
 <script>
@@ -1052,44 +1052,51 @@ function renderFinKPISection(){
 // definicion de lineas P&L con jerarquia
 const PL_HIER=[
   // ── REVENUE ────────────────────────────────────────────────────────────────
-  {key:'revenue',         label:'Revenue',                    level:0, sign:1,  bold:true},
-  {key:'lto_revenue',     label:'  LTO Users (Watts)',        level:1, sign:1,  bold:false},
-  {key:'lto_additional',  label:'  LTO Additional Consumption',    level:1, sign:1,  bold:false},
-  {key:'b2c_revenue',     label:'  B2C Users (Watts)',        level:1, sign:1,  bold:false},
-  {key:'dae_hub_revenue', label:'  Dedicated DAE Hubs',       level:1, sign:1,  bold:false},
-  {key:'dae_reimbursement',label:'  DAE Energy Reimbursement', level:1, sign:1,  bold:false},
-  {key:'others_revenue',  label:'  Other Revenue',           level:1, sign:1,  bold:false},
+  {key:'revenue', label:'Revenue', sign:1, bold:true, children:[
+    {key:'lto_revenue',      label:'LTO Users (Watts)',          sign:1},
+    {key:'lto_additional',   label:'LTO Additional Consumption', sign:1},
+    {key:'b2c_revenue',      label:'B2C Users (Watts)',          sign:1},
+    {key:'dae_hub_revenue',  label:'Dedicated DAE Hubs',         sign:1},
+    {key:'dae_reimbursement',label:'DAE Energy Reimbursement',   sign:1},
+    {key:'others_revenue',   label:'Other Revenue',              sign:1},
+  ]},
   // ── COGS ───────────────────────────────────────────────────────────────────
-  {key:'cogs_total',      label:'COGS',                       level:0, sign:-1, bold:true},
-  {key:'energy_costs',    label:'  Energy Costs',             level:1, sign:-1, bold:false},
-  {key:'dae_energy_cost', label:'  Energy Cost (DAE)',        level:1, sign:-1, bold:false},
-  {key:'revenue_share',   label:'  Revenue Share',            level:1, sign:-1, bold:false},
-  {key:'bank_fees',       label:'  Bank & Other Fees',        level:1, sign:-1, bold:false},
-  {key:'om_costs',        label:'  O&M',                      level:1, sign:-1, bold:false},
-  {key:'maintenance_hubs',label:'  Hub Maintenance',         level:1, sign:-1, bold:false},
+  {key:'cogs_total', label:'COGS', sign:-1, bold:true, invert:true, children:[
+    {key:'energy_costs',     label:'Energy Costs',    sign:-1},
+    {key:'dae_energy_cost',  label:'Energy Cost (DAE)',sign:-1},
+    {key:'revenue_share',    label:'Revenue Share',   sign:-1},
+    {key:'bank_fees',        label:'Bank & Other Fees',sign:-1},
+    {key:'om_costs',         label:'O&M',             sign:-1},
+    {key:'maintenance_hubs', label:'Hub Maintenance', sign:-1},
+  ]},
   // ── GROSS PROFIT ───────────────────────────────────────────────────────────
-  {key:'gross_profit',    label:'Gross Profit',               level:0, sign:1,  bold:true,  subtotal:true},
-  {key:'gross_margin',    label:'  Gross Margin %',           level:1, sign:1,  bold:false, isPct:true},
+  {key:'gross_profit', label:'Gross Profit', sign:1, bold:true, subtotal:true},
+  {margin:true, l:'Gross Margin %', n:'gross_profit', d:'revenue'},
   // ── OPEX ───────────────────────────────────────────────────────────────────
-  {key:'opex',            label:'OPEX',                       level:0, sign:-1, bold:true},
-  {key:'outside_services',label:'  Outside Services',         level:1, sign:-1, bold:false},
-  {key:'security',        label:'  Security',                level:1, sign:-1, bold:false},
-  {key:'hub_utilities',   label:'  Hub Utilities',            level:1, sign:-1, bold:false},
-  {key:'rent_hubs',       label:'  Hub Rent',               level:1, sign:-1, bold:false},
+  {key:'opex', label:'OPEX', sign:-1, bold:true, invert:true, children:[
+    {key:'outside_services', label:'Outside Services', sign:-1},
+    {key:'security',         label:'Security',         sign:-1},
+    {key:'hub_utilities',    label:'Hub Utilities',    sign:-1},
+    {key:'rent_hubs',        label:'Hub Rent',         sign:-1},
+  ]},
   // ── SG&A ───────────────────────────────────────────────────────────────────
-  {key:'corporate_expenses',label:'SG&A',              level:0, sign:-1, bold:true},
-  {key:'wages_opex',      label:'  Salaries',                  level:1, sign:-1, bold:false},
-  {key:'bonus_opex',      label:'  Bonuses',                    level:1, sign:-1, bold:false},
-  {key:'benefits_opex',   label:'  Benefits',               level:1, sign:-1, bold:false},
-  {key:'insurance_opex',  label:'  Insurance',                  level:1, sign:-1, bold:false},
-  {key:'marketing',       label:'  Marketing',                level:1, sign:-1, bold:false},
+  {key:'corporate_expenses', label:'SG&A', sign:-1, bold:true, invert:true, children:[
+    {key:'wages_opex',    label:'Salaries',  sign:-1},
+    {key:'bonus_opex',    label:'Bonuses',   sign:-1},
+    {key:'benefits_opex', label:'Benefits',  sign:-1},
+    {key:'insurance_opex',label:'Insurance', sign:-1},
+    {key:'marketing',     label:'Marketing', sign:-1},
+  ]},
   // ── EBITDA ─────────────────────────────────────────────────────────────────
-  {key:'ebitda',          label:'EBITDA',                     level:0, sign:1,  bold:true,  subtotal:true},
-  {key:'da',              label:'  D&A',                      level:1, sign:-1, bold:false},
-  {key:'interest_expense',label:'  Interest',                level:1, sign:-1, bold:false},
-  {key:'ebt',             label:'EBT',                        level:0, sign:1,  bold:true,  subtotal:true},
-  {key:'taxes',           label:'  Taxes',                level:1, sign:-1, bold:false},
-  {key:'net_income',      label:'Net Income',                 level:0, sign:1,  bold:true,  subtotal:true},
+  {key:'ebitda', label:'EBITDA', sign:1, bold:true, subtotal:true},
+  {margin:true, l:'EBITDA Margin %', n:'ebitda', d:'revenue'},
+  // ── BELOW EBITDA ───────────────────────────────────────────────────────────
+  {key:'da',               label:'D&A',              sign:-1},
+  {key:'interest_expense', label:'Interest Expense', sign:-1},
+  {key:'ebt',              label:'EBT',              sign:1,  bold:true, subtotal:true},
+  {key:'taxes',            label:'Taxes',            sign:-1},
+  {key:'net_income',       label:'Net Income',       sign:1,  bold:true, subtotal:true},
+  {margin:true, l:'Net Income Margin %', n:'net_income', d:'revenue'},
 ];
 
 function rowMm(key,label,opts){
