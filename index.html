@@ -72,8 +72,8 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 .kpi-spark{margin-top:10px;height:52px;position:relative}
 .kpi-spark canvas{display:block;width:100%!important;height:52px!important}
 .kpi-spark-range{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--tx3);margin-top:3px;letter-spacing:0.02em;overflow:hidden}
-.kpi-spark-min{position:absolute;bottom:3px;left:2px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#999;line-height:1;pointer-events:none}
-.kpi-spark-max{position:absolute;top:3px;right:2px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#999;line-height:1;pointer-events:none}
+.kpi-spark-min{position:absolute;bottom:3px;left:3px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#ee0033;line-height:1;pointer-events:none;font-weight:600}
+.kpi-spark-max{position:absolute;top:3px;left:3px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#444;line-height:1;pointer-events:none}
 
 /* Financial KPI section */
 .fin-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;margin-bottom:28px}
@@ -605,7 +605,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-06 10:39</div>
+  <div>build 2026-07-06 10:42</div>
 </footer>
 
 <script>
@@ -870,6 +870,10 @@ function renderKPISparklines(){
       return v.toFixed(1);
     }
     const hasBud = buds.some(v=>v!=null);
+    // Red dot at minimum value point
+    const minIdx = vals.reduce((mi,v,i) => (v!=null && (vals[mi]==null || v<vals[mi])) ? i : mi, 0);
+    const ptColors = vals.map((_,i) => i===minIdx ? '#ee0033' : 'transparent');
+    const ptRadii  = vals.map((_,i) => i===minIdx ? 3.5 : 0);
     const datasets = [{
       data: vals,
       borderColor: '#11ABAB',
@@ -877,7 +881,9 @@ function renderKPISparklines(){
       fill: 'origin',
       tension: 0.35,
       borderWidth: 1.8,
-      pointRadius: 0,
+      pointRadius: ptRadii,
+      pointBackgroundColor: ptColors,
+      pointBorderColor: ptColors,
       pointHoverRadius: 3,
       spanGaps: false
     }];
