@@ -72,8 +72,7 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 .kpi-spark{margin-top:10px;height:52px;position:relative}
 .kpi-spark canvas{display:block;width:100%!important;height:52px!important}
 .kpi-spark-range{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--tx3);margin-top:3px;letter-spacing:0.02em;overflow:hidden}
-.kpi-spark-min{position:absolute;bottom:3px;left:3px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#ee0033;line-height:1;pointer-events:none;font-weight:600}
-.kpi-spark-max{position:absolute;top:3px;left:3px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#444;line-height:1;pointer-events:none}
+/* kpi-spark-min/max now rendered inside kpi-spark-range row */
 
 /* Financial KPI section */
 .fin-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;margin-bottom:28px}
@@ -605,7 +604,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-06 10:42</div>
+  <div>build 2026-07-06 10:45</div>
 </footer>
 
 <script>
@@ -803,7 +802,7 @@ function renderKPICards(){
       (valBud?
         '<div class="kpi-bud"><span><span class="lbl">vs Budget</span> '+fmtVal(valBud,ki)+'</span><span class="v '+budCls+'">'+budTxt+'</span></div>'
        :'<div class="kpi-bud"><span class="lbl">Budget</span><span class="v" style="color:var(--tx3)">n.a.</span></div>')+
-      '<div class="kpi-spark"><canvas id="'+sid+'"></canvas><span class="kpi-spark-min" id="ksmin-'+i+'"></span><span class="kpi-spark-max" id="ksmax-'+i+'"></span></div>'+
+      '<div class="kpi-spark"><canvas id="'+sid+'"></canvas></div>'+
       '<div class="kpi-spark-range" id="ksr-'+i+'"></div>'+
     '</div>';
   }).join('');
@@ -870,10 +869,6 @@ function renderKPISparklines(){
       return v.toFixed(1);
     }
     const hasBud = buds.some(v=>v!=null);
-    // Red dot at minimum value point
-    const minIdx = vals.reduce((mi,v,i) => (v!=null && (vals[mi]==null || v<vals[mi])) ? i : mi, 0);
-    const ptColors = vals.map((_,i) => i===minIdx ? '#ee0033' : 'transparent');
-    const ptRadii  = vals.map((_,i) => i===minIdx ? 3.5 : 0);
     const datasets = [{
       data: vals,
       borderColor: '#11ABAB',
@@ -881,9 +876,7 @@ function renderKPISparklines(){
       fill: 'origin',
       tension: 0.35,
       borderWidth: 1.8,
-      pointRadius: ptRadii,
-      pointBackgroundColor: ptColors,
-      pointBorderColor: ptColors,
+      pointRadius: 0,
       pointHoverRadius: 3,
       spanGaps: false
     }];
@@ -917,20 +910,16 @@ function renderKPISparklines(){
     });
     __KPI_SPARK_CHARTS.push(ch);
 
-    // Min/max overlay on chart + date range below
+    // Fila debajo: "min – max" a la izquierda · "fecha inicio – fecha fin" a la derecha
     const minV = allVals.length ? Math.min(...allVals) : null;
     const maxV = allVals.length ? Math.max(...allVals) : null;
-    const minTxt = minV != null ? yfmt(minV) : '';
-    const maxTxt = maxV != null ? yfmt(maxV) : '';
-    const minEl = document.getElementById('ksmin-'+i);
-    const maxEl = document.getElementById('ksmax-'+i);
-    if(minEl) minEl.textContent = minTxt;
-    if(maxEl) maxEl.textContent = maxTxt;
-    // Date range below
     const rangeEl = document.getElementById('ksr-'+i);
     if(rangeEl && labels.length >= 2){
-      rangeEl.textContent = labels[0] + ' – ' + labels[labels.length-1];
-      rangeEl.style.textAlign = 'right';
+      const mmTxt = (minV!=null && maxV!=null) ? yfmt(minV)+' – '+yfmt(maxV) : '';
+      const dtTxt = labels[0] + ' – ' + labels[labels.length-1];
+      rangeEl.innerHTML =
+        '<span style="float:left">'+mmTxt+'</span>'+
+        '<span style="float:right">'+dtTxt+'</span>';
     }
   });
 }
