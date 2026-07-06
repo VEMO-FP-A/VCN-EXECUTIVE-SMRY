@@ -71,7 +71,7 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 .kpi-bud .v{font-weight:600;font-variant-numeric:tabular-nums}
 .kpi-spark{margin-top:10px;height:52px;position:relative}
 .kpi-spark canvas{display:block;width:100%!important;height:52px!important}
-.kpi-spark-range{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--tx3);text-align:right;margin-top:2px;letter-spacing:0.02em}
+.kpi-spark-range{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--tx3);margin-top:3px;letter-spacing:0.02em;overflow:hidden}
 
 /* Financial KPI section */
 .fin-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;margin-bottom:28px}
@@ -603,7 +603,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-04 18:52</div>
+  <div>build 2026-07-06 10:14</div>
 </footer>
 
 <script>
@@ -835,9 +835,11 @@ function renderKPISparklines(){
     for(let j=0; j<=LI; j++){ if(rawVals[j]!=null){ xFirst=j; break; } }
     // Ensure at least 3 months of context
     xFirst = Math.max(0, Math.min(xFirst, LI-2));
+    // For sparse KPIs, floor at Jan-26 (idx 12) to avoid pre-launch noise
+    if(isSparse){ xFirst = Math.max(xFirst, 12); }
     // Also consider budget start
     let bFirst = xFirst;
-    for(let j=0; j<=LI; j++){ if(rawBuds[j]!=null){ bFirst=j; break; } }
+    for(let j=12; j<=LI; j++){ if(rawBuds[j]!=null){ bFirst=j; break; } }
     xFirst = Math.min(xFirst, bFirst);
 
     const labels = [], vals = [], buds = [];
@@ -897,33 +899,27 @@ function renderKPISparklines(){
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        layout: { padding: { left: 0, right: 2 } },
+        layout: { padding: { left: 2, right: 2, top: 2, bottom: 2 } },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
         scales: {
           x: { display: false },
-          y: {
-            display: true,
-            position: 'left',
-            min: yr.min,
-            max: yr.max,
-            ticks: {
-              font: { family:'Space Grotesk', size: 7 },
-              color: '#aaa',
-              maxTicksLimit: 2,
-              callback: yfmt
-            },
-            grid: { display: false },
-            border: { display: false }
-          }
+          y: { display: false, min: yr.min, max: yr.max }
         }
       }
     });
     __KPI_SPARK_CHARTS.push(ch);
 
-    // Date range label
+    // Date range + min/max label below the chart
     const rangeEl = document.getElementById('ksr-'+i);
     if(rangeEl && labels.length >= 2){
-      rangeEl.textContent = labels[0] + ' – ' + labels[labels.length-1];
+      const minV = allVals.length ? Math.min(...allVals) : null;
+      const maxV = allVals.length ? Math.max(...allVals) : null;
+      const minTxt = minV != null ? yfmt(minV) : '';
+      const maxTxt = maxV != null ? yfmt(maxV) : '';
+      const rangeTxt = labels[0] + ' – ' + labels[labels.length-1];
+      rangeEl.innerHTML =
+        '<span style="float:left;color:var(--tx3)">' + minTxt + ' – ' + maxTxt + '</span>' +
+        '<span style="float:right;color:var(--tx3)">' + rangeTxt + '</span>';
     }
   });
 }
