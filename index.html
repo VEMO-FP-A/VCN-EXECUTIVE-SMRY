@@ -539,6 +539,20 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
     </div>
     <div class="chart-body" style="height:320px"><canvas id="pl-bridge"></canvas></div>
   </div>
+
+  <!-- EBITDA vs Budget Bridge -->
+  <div class="vemo-section-title" style="margin-top:28px">EBITDA <b>vs Budget</b> Bridge</div>
+  <div class="chart-card" style="margin-bottom:22px">
+    <div class="chart-hd">
+      <span class="t">Budget EBITDA → Actual EBITDA · <span id="ebridge-period"></span></span>
+      <div class="chart-toggles">
+        <label><input type="radio" name="ebridge-mode" value="cur" checked> Current month</label>
+        <label><input type="radio" name="ebridge-mode" value="ytd"> YTD</label>
+      </div>
+    </div>
+    <div class="chart-body" style="height:360px"><canvas id="ebitda-bridge"></canvas></div>
+  </div>
+
   <div class="vemo-section-title">Charts P&amp;L (con Budget y Proyección)</div>
   <div id="pl-charts" class="charts-grid"></div>
 
@@ -604,7 +618,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-06 10:45</div>
+  <div>build 2026-07-06 11:50</div>
 </footer>
 
 <script>
@@ -666,6 +680,7 @@ document.querySelectorAll('.tab-bar button').forEach(b=>{
     if(b.dataset.s === 'pl'){
       setTimeout(function(){
         try { renderPLBridge(); } catch(e){ console.warn('PLBridge re-render',e); }
+        try { renderEbitdaBridge(); } catch(e){ console.warn('EBridge re-render',e); }
         try { renderPLCharts(); } catch(e){ console.warn('PLCharts re-render',e); }
       }, 80);
     }
@@ -2136,6 +2151,162 @@ function renderPLBridge(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind);
   else bind();
 })();
+
+let __EBRIDGE_CHART = null;
+function renderEbitdaBridge(){
+  const ctx = document.getElementById('ebitda-bridge');
+  if(!ctx) return;
+  const mode = (document.querySelector('input[name="ebridge-mode"]:checked')||{}).value || 'cur';
+  const isYTD = (mode === 'ytd');
+  const s = isYTD ? YTD_START : CUR;
+  const e = CUR;
+
+  // Helpers: sum actual / sum budget
+  function sA(key){
+    const vk = (typeof plViewKey==='function') ? plViewKey(key) : key;
+    return sum(arr(vk), s, e);
+  }
+  function sB(key){ return sum(barr(key), s, e); }
+
+  // Core values
+  const budE = sB('ebitda');
+  const actE = sA('ebitda');
+  if(!budE && !actE){ return; }   // no data yet
+
+  // Bridge components:
+  // ΔRevenue  = actual rev - budget rev
+  const dRev  = sA('revenue') - sB('revenue');
+  // ΔCOGS derived from Gross Profit: ΔGP - ΔRevenue = cost efficiency within gross margin
+  const dGP   = sA('gross_profit') - sB('gross_profit');
+  const dCogs = dGP - dRev;   // positive = favorable (lower costs)
+  // ΔOPEX
+  const dOpex = sA('opex') - sB('opex');
+  // ΔSG&A: corporate G&A (actual=corporate_expenses + cross_functional_sga, budget=budget keys)
+  const budSGA = sum(D.budget_corporate_ga||[], s, e) + sum(D.budget_cross_functional_sga||[], s, e);
+  const actSGA = sum(arr('corporate_expenses'), s, e) + sum(arr('cross_functional_sga'), s, e);
+  const dSGA  = actSGA - budSGA;
+  // Residual (catches any unclassified items)
+  const dOther = (actE - budE) - (dRev + dCogs + dOpex + dSGA);
+
+  // Build steps array
+  const steps = [
+    {l:'Budget\nEBITDA', val:budE,  type:'anchor'},
+    {l:'ΔRevenue',        val:dRev,  type:'delta'},
+    {l:'ΔCOGS',           val:dCogs, type:'delta'},
+    {l:'ΔOPEX',           val:dOpex, type:'delta'},
+    {l:'ΔSG&A',           val:dSGA,  type:'delta'},
+  ];
+  if(Math.abs(dOther) > 50000) steps.push({l:'ΔOther', val:dOther, type:'delta'});
+  steps.push({l:'Actual\nEBITDA', val:actE, type:'anchor'});
+
+  // Build floating bar positions
+  const labels=[], data=[], colors=[], vals=[];
+  let running = 0;
+  steps.forEach(stp=>{
+    labels.push(stp.l);
+    vals.push(stp.val);
+    if(stp.type==='anchor'){
+      data.push([Math.min(0, stp.val), Math.max(0, stp.val)]);
+      colors.push(stp.val >= 0 ? '#168888' : '#C0392B');
+      running = stp.val;
+    } else {
+      const newR = running + stp.val;
+      data.push([Math.min(running, newR), Math.max(running, newR)]);
+      colors.push(stp.val >= 0 ? '#11ABAB' : '#C0392B');
+      running = newR;
+    }
+  });
+
+  // Inline plugin: draw value labels on each bar
+  const valueLabelPlugin = {
+    id:'ebridgeLabels',
+    afterDatasetsDraw(chart){
+      const {ctx:c, scales:{x,y}} = chart;
+      const ds = chart.data.datasets[0];
+      ds.data.forEach(([lo,hi], i)=>{
+        const v = vals[i];
+        if(v==null || isNaN(v)) return;
+        const xPos = x.getPixelForValue(i);
+        const yLo  = y.getPixelForValue(lo);
+        const yHi  = y.getPixelForValue(hi);
+        const barH = Math.abs(yLo - yHi);
+        const txt  = fmtMm(v);
+        c.save();
+        c.font = '600 9.5px "Space Grotesk", sans-serif';
+        c.fillStyle = '#fff';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        const midY = (yLo + yHi) / 2;
+        if(barH > 16){
+          c.fillText(txt, xPos, midY);
+        } else {
+          // draw above or below bar
+          c.fillStyle = colors[i] === '#C0392B' ? '#C0392B' : '#168888';
+          const offset = (v >= 0) ? yHi - 10 : yLo + 10;
+          c.fillText(txt, xPos, offset);
+        }
+        c.restore();
+      });
+    }
+  };
+
+  if(__EBRIDGE_CHART) __EBRIDGE_CHART.destroy();
+  __EBRIDGE_CHART = new Chart(ctx, {
+    type:'bar',
+    plugins:[valueLabelPlugin],
+    data:{
+      labels,
+      datasets:[{
+        label:'',
+        data,
+        backgroundColor: colors,
+        borderColor: colors,
+        borderWidth:0,
+        borderRadius:3
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title: ctx=>ctx[0].label.replace('\n',' '),
+          label: ctx=>{
+            const stp=steps[ctx.dataIndex];
+            if(stp.type==='anchor') return 'EBITDA: '+fmtMm(stp.val)+'M';
+            const sign = stp.val>=0 ? '+' : '';
+            return stp.l+': '+sign+fmtMm(stp.val)+'M vs Budget';
+          }
+        }}
+      },
+      scales:{
+        x:{
+          ticks:{font:{family:'Space Grotesk',size:10},color:'#888'},
+          grid:{display:false}
+        },
+        y:{
+          ticks:{font:{family:'Space Grotesk',size:9},color:'#888',callback:v=>fmtMm(v)},
+          grid:{color:'rgba(0,0,0,0.05)'}
+        }
+      }
+    }
+  });
+
+  // Period label
+  const lbl = isYTD ? mlbl(YTD_START)+' → '+mlbl(YTD_END) : mlbl(CUR);
+  const periodEl = document.getElementById('ebridge-period');
+  if(periodEl) periodEl.textContent = lbl;
+}
+(function(){
+  function bind(){
+    document.querySelectorAll('input[name="ebridge-mode"]').forEach(r=>{
+      r.addEventListener('change', renderEbitdaBridge);
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
+})();
+
 
 function renderPLCharts(){
   const root=document.getElementById('pl-charts');
@@ -4680,6 +4851,7 @@ function init(){
   try { setupChat(); } catch(e){ console.warn('setupChat',e); }
   try { renderPLVemo('pl-vemo-detail',{simple:false,title:'VCN – <b>P&L Summary</b>'}); } catch(e){ console.warn('renderPLVemo detail',e); }
   try { renderPLBridge(); } catch(e){ console.warn('renderPLBridge',e); }
+  try { renderEbitdaBridge(); } catch(e){ console.warn('renderEbitdaBridge',e); }
   try { renderPLCharts(); } catch(e){ console.warn('renderPLCharts',e); }
   try { setupVarFilters(); } catch(e){ console.warn('setupVarFilters',e); }
   try { renderVariation(); } catch(e){ console.warn('renderVariation',e); }
