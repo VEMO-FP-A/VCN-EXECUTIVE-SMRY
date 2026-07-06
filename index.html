@@ -72,6 +72,8 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 .kpi-spark{margin-top:10px;height:52px;position:relative}
 .kpi-spark canvas{display:block;width:100%!important;height:52px!important}
 .kpi-spark-range{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--tx3);margin-top:3px;letter-spacing:0.02em;overflow:hidden}
+.kpi-spark-min{position:absolute;bottom:3px;left:2px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#999;line-height:1;pointer-events:none}
+.kpi-spark-max{position:absolute;top:3px;right:2px;font-family:'Space Grotesk',sans-serif;font-size:8px;color:#999;line-height:1;pointer-events:none}
 
 /* Financial KPI section */
 .fin-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;margin-bottom:28px}
@@ -322,8 +324,8 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 
 
 /* === STICKY TOP: header + tabs en un solo bloque continuo === */
-.sticky-top{position:sticky;top:0;background:var(--bg);z-index:50;margin-left:-50px;padding-left:50px;margin-right:-26px;padding-right:26px;padding-top:14px;padding-bottom:0;box-shadow:0 4px 12px rgba(0,0,0,0)}
-.sticky-top.scrolled{box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+.sticky-top{position:relative;background:var(--bg);margin-left:-50px;padding-left:50px;margin-right:-26px;padding-right:26px;padding-top:14px;padding-bottom:0}
+.sticky-top.scrolled{box-shadow:none}
 .sticky-top .header{margin-bottom:14px;padding-top:0;padding-bottom:0;position:static;background:transparent;box-shadow:none}
 .sticky-top .tab-bar{margin-bottom:0;padding-bottom:0;position:static;background:transparent;border-bottom:1px solid var(--b)}
 @media (max-width:900px){
@@ -603,7 +605,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-06 10:17</div>
+  <div>build 2026-07-06 10:36</div>
 </footer>
 
 <script>
@@ -801,7 +803,7 @@ function renderKPICards(){
       (valBud?
         '<div class="kpi-bud"><span><span class="lbl">vs Budget</span> '+fmtVal(valBud,ki)+'</span><span class="v '+budCls+'">'+budTxt+'</span></div>'
        :'<div class="kpi-bud"><span class="lbl">Budget</span><span class="v" style="color:var(--tx3)">n.a.</span></div>')+
-      '<div class="kpi-spark"><canvas id="'+sid+'"></canvas></div>'+
+      '<div class="kpi-spark"><canvas id="'+sid+'"></canvas><span class="kpi-spark-min" id="ksmin-'+i+'"></span><span class="kpi-spark-max" id="ksmax-'+i+'"></span></div>'+
       '<div class="kpi-spark-range" id="ksr-'+i+'"></div>'+
     '</div>';
   }).join('');
@@ -909,17 +911,20 @@ function renderKPISparklines(){
     });
     __KPI_SPARK_CHARTS.push(ch);
 
-    // Date range + min/max label below the chart
+    // Min/max overlay on chart + date range below
+    const minV = allVals.length ? Math.min(...allVals) : null;
+    const maxV = allVals.length ? Math.max(...allVals) : null;
+    const minTxt = minV != null ? yfmt(minV) : '';
+    const maxTxt = maxV != null ? yfmt(maxV) : '';
+    const minEl = document.getElementById('ksmin-'+i);
+    const maxEl = document.getElementById('ksmax-'+i);
+    if(minEl) minEl.textContent = minTxt;
+    if(maxEl) maxEl.textContent = maxTxt;
+    // Date range below
     const rangeEl = document.getElementById('ksr-'+i);
     if(rangeEl && labels.length >= 2){
-      const minV = allVals.length ? Math.min(...allVals) : null;
-      const maxV = allVals.length ? Math.max(...allVals) : null;
-      const minTxt = minV != null ? yfmt(minV) : '';
-      const maxTxt = maxV != null ? yfmt(maxV) : '';
-      const rangeTxt = labels[0] + ' – ' + labels[labels.length-1];
-      rangeEl.innerHTML =
-        '<span style="float:left;color:var(--tx3)">' + minTxt + ' – ' + maxTxt + '</span>' +
-        '<span style="float:right;color:var(--tx3)">' + rangeTxt + '</span>';
+      rangeEl.textContent = labels[0] + ' – ' + labels[labels.length-1];
+      rangeEl.style.textAlign = 'right';
     }
   });
 }
