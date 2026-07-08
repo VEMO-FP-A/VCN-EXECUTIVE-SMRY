@@ -618,7 +618,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-06 11:50</div>
+  <div>build 2026-07-08 11:50</div>
 </footer>
 
 <script>
@@ -1926,9 +1926,17 @@ function makeLineChart(canvasId,label,data,opts){
   }
   if(opts.projection&&mainTrimmed.filter(v=>v!=null).length>=3){
     const proj=new Array(MAX_X-xStart).fill(null);
-    const last3=mainTrimmed.slice(LI-xStart-2,LI-xStart+1).filter(v=>v!=null);
-    const ma=last3.length?last3.reduce((a,b)=>a+b,0)/last3.length:0;
-    for(let i=LI-xStart+1;i<Math.min(LI-xStart+4,MAX_X-xStart);i++) proj[i]=ma;
+    // Anchor: first projection point = last actual value (no gap)
+    const liOff = LI - xStart;
+    proj[liOff] = mainTrimmed[liOff];  // connect to solid line
+    // Rolling 3M MA: work array starts with actuals, each projection feeds next
+    const work = mainTrimmed.slice(0, liOff + 1).filter(v => v != null);
+    for(let i = liOff + 1; i < Math.min(liOff + 4, MAX_X - xStart); i++){
+      const w3 = work.slice(-3);
+      const ma = w3.reduce((a,b)=>a+b, 0) / w3.length;
+      proj[i] = ma;
+      work.push(ma);  // feed this projection into next window
+    }
     datasets.push({label:'Projection (3M MA)',data:proj,borderColor:'#7BDADA',backgroundColor:'rgba(123,218,218,0.15)',borderDash:[3,3],fill:false,tension:0.32,borderWidth:1.5,pointRadius:2,pointBackgroundColor:'#7BDADA'});
   }
   let yr=smartYRange(mainTrimmed);
