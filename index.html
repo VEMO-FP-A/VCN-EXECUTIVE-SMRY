@@ -430,7 +430,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
       <select id="exec-kpi-picker" style="margin-left:auto;font-family:inherit;font-size:11px;padding:5px 10px;border:1px solid rgba(255,255,255,0.30);background:rgba(255,255,255,0.10);color:#fff;border-radius:5px;cursor:pointer;font-weight:600"></select>
       <div class="chart-toggles">
         <label><input type="checkbox" id="exec-kpi-bud" checked> Budget</label>
-        <label><input type="checkbox" id="exec-kpi-proj"> Projection</label>
+        <label><input type="checkbox" id="exec-kpi-proj"> Forecast</label>
       </div>
     </div>
     <div class="chart-body" style="height:300px"><canvas id="exec-kpi-canvas"></canvas></div>
@@ -620,7 +620,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-08 16:23</div>
+  <div>build 2026-07-08 17:26</div>
 </footer>
 
 <script>
@@ -1961,18 +1961,18 @@ function makeLineChart(canvasId,label,data,opts){
   }
   if(opts.projection&&mainTrimmed.filter(v=>v!=null).length>=3){
     const proj=new Array(MAX_X-xStart).fill(null);
-    // Anchor: first projection point = last actual value (no gap)
+    // Anchor: first forecast point = last actual value (no gap)
     const liOff = LI - xStart;
     proj[liOff] = mainTrimmed[liOff];  // connect to solid line
-    // Rolling 3M MA: work array starts with actuals, each projection feeds next
+    // Rolling 3M MA: work array starts with actuals, each forecast feeds next
     const work = mainTrimmed.slice(0, liOff + 1).filter(v => v != null);
     for(let i = liOff + 1; i < Math.min(liOff + 4, MAX_X - xStart); i++){
       const w3 = work.slice(-3);
       const ma = w3.reduce((a,b)=>a+b, 0) / w3.length;
       proj[i] = ma;
-      work.push(ma);  // feed this projection into next window
+      work.push(ma);  // feed this forecast into next window
     }
-    datasets.push({label:'Projection (3M MA)',data:proj,borderColor:'#7BDADA',backgroundColor:'rgba(123,218,218,0.15)',borderDash:[3,3],fill:false,tension:0.32,borderWidth:1.5,pointRadius:2,pointBackgroundColor:'#7BDADA'});
+    datasets.push({label:'Forecast (3M MA)',data:proj,borderColor:'#7BDADA',backgroundColor:'rgba(123,218,218,0.15)',borderDash:[3,3],fill:false,tension:0.32,borderWidth:1.5,pointRadius:2,pointBackgroundColor:'#7BDADA'});
   }
   let yr=smartYRange(mainTrimmed);
   if(opts.wideY && yr.min !== undefined && yr.max !== undefined){
@@ -3761,7 +3761,7 @@ function chatBotAnswer(q){
     let out = '🎯 PROGRESO vs BUDGET (YTD '+CURY+'):\n\n';
     if(ytdRb) out += '• Revenue: '+fmtMm(ytdR)+'M / '+fmtMm(ytdRb)+'M Budget = '+(ytdR/ytdRb*100).toFixed(1)+'% achievement\n';
     if(ytdEb) out += '• EBITDA: '+fmtMm(ytdE)+'M / '+fmtMm(ytdEb)+'M Budget = '+(ytdEb?(ytdE/Math.abs(ytdEb))*100:0).toFixed(1)+'% achievement\n';
-    // Projection year-end based on 3M MA
+    // Forecast year-end based on 3M MA
     const a = arr('revenue');
     const last3 = [a[CUR],a[CUR-1],a[CUR-2]].filter(v=>v);
     const ma = last3.length ? last3.reduce((x,y)=>x+y,0)/last3.length : 0;
@@ -4105,7 +4105,7 @@ function chatBotAnswer(q){
     const projFY = ytd + ma*monthsLeft;
     const budFY = sum(barr(k), YTD_START, YTD_START+11);
     const gap = projFY - budFY;
-    let out = _banner('Year-end Projection · '+k.replace(/_/g,' ').toUpperCase());
+    let out = _banner('Year-end Forecast · '+k.replace(/_/g,' ').toUpperCase());
     out += '<div class="ri"><div>YTD: <b>'+fmtMm(ytd)+'M</b> ('+(CUR-YTD_START+1)+' months)</div></div>';
     out += '<div class="ri"><div>Run-rate (3M MA): <b>'+fmtMm(ma)+'M/month</b> · '+monthsLeft+' months remaining</div></div>';
     out += '<div class="ri"><div>Projected FY: <b>'+fmtMm(projFY)+'M</b></div></div>';
