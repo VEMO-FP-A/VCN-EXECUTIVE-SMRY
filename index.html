@@ -71,7 +71,9 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 .kpi-bud .v{font-weight:600;font-variant-numeric:tabular-nums}
 .kpi-spark{margin-top:10px;height:52px;position:relative}
 .kpi-spark canvas{display:block;width:100%!important;height:52px!important}
-.kpi-spark-range{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--tx3);margin-top:3px;letter-spacing:0.02em;overflow:hidden}
+.kpi-unit-note{font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:400;color:var(--tx3);letter-spacing:0.03em;vertical-align:middle;margin-left:2px}
+.kpi-spark-legend{display:flex;align-items:center;margin:3px 0 1px 0;min-height:10px}
+.kpi-spark-range{font-family:'Space Grotesk',sans-serif;font-size:9px;color:var(--tx3);margin-top:2px;letter-spacing:0.02em;overflow:hidden}
 /* kpi-spark-min/max now rendered inside kpi-spark-range row */
 
 /* Financial KPI section */
@@ -618,7 +620,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-08 11:50</div>
+  <div>build 2026-07-08 16:23</div>
 </footer>
 
 <script>
@@ -757,11 +759,21 @@ function fmtVal(v,ki){
   if(v==null||isNaN(v)) return '—';
   if(ki.type==='pct') return (v*100).toFixed(1)+'%';
   if(ki.fmt==='mm') return fmtMm(v)+'M';
-  if(ki.fmt==='int') return fmtInt(v);
+  if(ki.fmt==='int'){
+    // auto-scale to millions if large enough
+    if(Math.abs(v)>=1e6) return fmtMm(v)+'M';
+    return fmtInt(v);
+  }
   if(ki.fmt==='k') return Math.round(v).toLocaleString();
   if(ki.fmt==='n1') return fmtN(v,1);
   if(ki.fmt==='n2') return fmtN(v,2);
   return v.toFixed(1);
+}
+// helper: true when fmtVal will render as millions
+function isMillionsFmt(v,ki){
+  if(ki.fmt==='mm') return true;
+  if(ki.fmt==='int' && Math.abs(v||0)>=1e6) return true;
+  return false;
 }
 // Like getVal but scans back to last non-zero when current is 0 (for sparse ratio KPIs)
 function getDisplayVal(ki, idx){
@@ -810,14 +822,16 @@ function renderKPICards(){
     const arrSym=momPct==null?'':(momPct>=0?'▲':'▼');
     const cardCls=isNegBetter(momPct)?'amber':'';
     const sid='ksp-'+i;
+    const _showMNote = isMillionsFmt(val,ki);
     return '<div class="kpi-card '+cardCls+'">'+
-      '<div class="kpi-l">'+ki.l+'</div>'+
+      '<div class="kpi-l">'+ki.l+(_showMNote?' <span class="kpi-unit-note">MXN M</span>':'')+'</div>'+
       '<div class="kpi-v">'+fmtVal(val,ki)+'</div>'+
       '<div class="kpi-mom"><span class="arr '+momCls+'">'+arrSym+'</span> <span class="'+momCls+'">'+momTxt+'</span> <span style="color:var(--tx3)">vs '+mlblShort(PREV)+'</span></div>'+
       (valBud?
         '<div class="kpi-bud"><span><span class="lbl">vs Budget</span> '+fmtVal(valBud,ki)+'</span><span class="v '+budCls+'">'+budTxt+'</span></div>'
        :'<div class="kpi-bud"><span class="lbl">Budget</span><span class="v" style="color:var(--tx3)">n.a.</span></div>')+
       '<div class="kpi-spark"><canvas id="'+sid+'"></canvas></div>'+
+      '<div class="kpi-spark-legend" id="ksl-'+i+'"></div>'+
       '<div class="kpi-spark-range" id="ksr-'+i+'"></div>'+
     '</div>';
   }).join('');
@@ -925,6 +939,27 @@ function renderKPISparklines(){
     });
     __KPI_SPARK_CHARTS.push(ch);
 
+    // Legend slot: Actuals / Budget
+    const legendEl = document.getElementById('ksl-'+i);
+    if(legendEl){
+      if(hasBud){
+        legendEl.innerHTML =
+          '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:7px">'+
+            '<svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="#11ABAB" stroke-width="1.8"/></svg>'+
+            '<span style="font-family:Space Grotesk,sans-serif;font-size:8px;color:#888">Actuals</span>'+
+          '</span>'+
+          '<span style="display:inline-flex;align-items:center;gap:3px">'+
+            '<svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="#1F5454" stroke-width="1.2" stroke-dasharray="4,3"/></svg>'+
+            '<span style="font-family:Space Grotesk,sans-serif;font-size:8px;color:#888">Budget</span>'+
+          '</span>';
+      } else {
+        legendEl.innerHTML =
+          '<span style="display:inline-flex;align-items:center;gap:3px">'+
+            '<svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="#11ABAB" stroke-width="1.8"/></svg>'+
+            '<span style="font-family:Space Grotesk,sans-serif;font-size:8px;color:#888">Actuals</span>'+
+          '</span>';
+      }
+    }
     // Fila debajo: "min – max" a la izquierda · "fecha inicio – fecha fin" a la derecha
     const minV = allVals.length ? Math.min(...allVals) : null;
     const maxV = allVals.length ? Math.max(...allVals) : null;
