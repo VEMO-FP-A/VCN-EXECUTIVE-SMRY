@@ -620,7 +620,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-08 17:26</div>
+  <div>build 2026-07-08 17:43</div>
 </footer>
 
 <script>
@@ -1974,7 +1974,10 @@ function makeLineChart(canvasId,label,data,opts){
     }
     datasets.push({label:'Forecast (3M MA)',data:proj,borderColor:'#7BDADA',backgroundColor:'rgba(123,218,218,0.15)',borderDash:[3,3],fill:false,tension:0.32,borderWidth:1.5,pointRadius:2,pointBackgroundColor:'#7BDADA'});
   }
-  let yr=smartYRange(mainTrimmed);
+  // Y range from ALL series combined (actuals + budget + forecast)
+  // so Budget/Forecast lines that exceed Actuals range are never clipped
+  const _allSeriesVals = datasets.flatMap(ds=>ds.data||[]).filter(v=>v!=null&&!isNaN(v));
+  let yr = smartYRange(_allSeriesVals.length ? _allSeriesVals : mainTrimmed);
   if(opts.wideY && yr.min !== undefined && yr.max !== undefined){
     yr = {min: 0, max: yr.max};
   }
