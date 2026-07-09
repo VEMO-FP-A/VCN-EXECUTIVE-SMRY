@@ -620,7 +620,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-08 17:43</div>
+  <div>build 2026-07-08 18:27</div>
 </footer>
 
 <script>
@@ -654,12 +654,16 @@ function barr(key){
 function sum(a,s,e){ let t=0; if(!a) return 0; for(let i=Math.max(0,s);i<=Math.min(e,a.length-1);i++) t+=(+a[i]||0); return t; }
 function eop(a,i){ return a&&a[i]!=null?+a[i]:0; }
 function avg(a,s,e){ let t=0,c=0; if(!a) return 0; for(let i=Math.max(0,s);i<=Math.min(e,a.length-1);i++){ if(a[i]!=null){ t+=+a[i]; c++; } } return c?t/c:0; }
-function fmtMm(n){ if(n==null||isNaN(n)) return '—'; const v=n/1e6,a=Math.abs(v); return (v<0?'($':'$')+a.toFixed(1)+(v<0?')':''); }
+function fmtMm(n){ if(n==null||isNaN(n)) return '—'; const v=n/1e6,a=Math.abs(v); return (v<0?'($':'$')+a.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+(v<0?')':''); }
+function fmtMmUnit(n){ if(n==null||isNaN(n)) return '—'; const v=n/1e6,a=Math.abs(v); const s=a.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}); return v<0?'($'+s+'M)':'$'+s+'M'; }
 function fmtPct(p,d){ d=d==null?1:d; if(p==null||isNaN(p)) return '—'; const a=Math.abs(p); return (p<0?'(':'')+a.toFixed(d)+'%'+(p<0?')':''); }
 function fmtBps(b){ if(b==null||isNaN(b)) return '—'; const a=Math.abs(b); return (b<0?'(':'')+Math.round(a).toLocaleString()+' bps'+(b<0?')':''); }
 function fmtInt(n){ if(n==null||isNaN(n)) return '—'; return Math.round(n).toLocaleString(); }
 function fmtN(n,d){ if(n==null||isNaN(n)) return '—'; return n.toLocaleString('en-US',{minimumFractionDigits:d??1,maximumFractionDigits:d??1}); }
-function fmtK(n,d){ if(n==null||isNaN(n)) return '—'; if(Math.abs(n)>=1000) return (n/1000).toFixed(d??1)+'k'; return n.toFixed(0); }
+function fmtK(n,d){ if(n==null||isNaN(n)) return '—'; const _a=Math.abs(n);
+  if(_a>=1e6) return (n/1e6).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
+  if(_a>=1e3) return (n/1e3).toLocaleString('en-US',{minimumFractionDigits:d??1,maximumFractionDigits:d??1})+'k';
+  return n.toFixed(0); }
 
 let PL_SHOW_HISTORIC = false;
 let PL_PERIOD_MODE = 'monthly';
@@ -758,16 +762,16 @@ function barrCand(keys){ for(const k of keys){ const c=D['budget_'+k]||D[k+'_bud
 function fmtVal(v,ki){
   if(v==null||isNaN(v)) return '—';
   if(ki.type==='pct') return (v*100).toFixed(1)+'%';
-  if(ki.fmt==='mm') return fmtMm(v)+'M';
+  if(ki.fmt==='mm') return fmtMmUnit(v);
   if(ki.fmt==='int'){
     // auto-scale to millions if large enough
-    if(Math.abs(v)>=1e6) return fmtMm(v)+'M';
+    if(Math.abs(v)>=1e6) return fmtMmUnit(v);
     return fmtInt(v);
   }
   if(ki.fmt==='k') return Math.round(v).toLocaleString();
   if(ki.fmt==='n1') return fmtN(v,1);
   if(ki.fmt==='n2') return fmtN(v,2);
-  return v.toFixed(1);
+  return v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
 }
 // helper: true when fmtVal will render as millions
 function isMillionsFmt(v,ki){
@@ -893,9 +897,10 @@ function renderKPISparklines(){
     // Y-axis formatter
     function yfmt(v){
       if(ki.type==='pct') return v.toFixed(0)+'%';
-      if(Math.abs(v)>=1e6) return (v/1e6).toFixed(0)+'M';
-      if(Math.abs(v)>=1e3) return (v/1e3).toFixed(0)+'k';
-      return v.toFixed(1);
+      const _sv=Math.abs(v);
+      if(_sv>=1e6) return (v/1e6).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
+      if(_sv>=1e3) return (v/1e3).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'k';
+      return v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
     }
     const hasBud = buds.some(v=>v!=null);
     const datasets = [{
@@ -1011,7 +1016,7 @@ function renderFinKPISection(){
       '<div class="fin-kpi-hd">'+
         '<div>'+
           '<div class="fin-kpi-title">'+fi.l+' · '+mlblShort(CUR)+'</div>'+
-          '<div class="fin-kpi-val">'+fmtMm(curVal)+'M</div>'+
+          '<div class="fin-kpi-val">'+fmtMmUnit(curVal)+'</div>'+
           '<div class="fin-kpi-pills">'+pillMom+pillBud+pillMargin+'</div>'+
         '</div>'+
       '</div>'+
@@ -1106,7 +1111,10 @@ function renderFinKPISection(){
           max: mx + pad,
           ticks: {
             font:{family:'Space Grotesk',size:9}, color:'#888',
-            callback: function(v){ const a=Math.abs(v); return a>=1e6?(v/1e6).toFixed(1)+'M': a>=1e3?(v/1e3).toFixed(0)+'k':v.toFixed(0); }
+            callback: function(v){ const a=Math.abs(v);
+                return a>=1e6?(v/1e6).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'M':
+                       a>=1e3?(v/1e3).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'k':
+                       Math.round(v).toLocaleString(); }
           },
           grid: { color:'rgba(0,0,0,0.05)' }
         }
@@ -1916,10 +1924,10 @@ function makeLineChart(canvasId,label,data,opts){
     opts.yfmt = function(v){
       if(v==null||isNaN(v)) return '';
       const a = Math.abs(v);
-      if(a>=1e6) return (v/1e6).toFixed(1)+'M';
-      if(a>=1e3) return (v/1e3).toFixed(1)+'k';
+      if(a>=1e6) return (v/1e6).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
+      if(a>=1e3) return (v/1e3).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'k';
       if(a>=10) return Math.round(v).toLocaleString();
-      return v.toFixed(1);
+      return v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
     };
   }
   // FIX: Trim X-axis al horizonte real (LI + 3 meses adelante max)
@@ -2319,7 +2327,7 @@ function renderEbitdaBridge(){
           title: ctx=>ctx[0].label.replace('\n',' '),
           label: ctx=>{
             const stp=steps[ctx.dataIndex];
-            if(stp.type==='anchor') return 'EBITDA: '+fmtMm(stp.val)+'M';
+            if(stp.type==='anchor') return 'EBITDA: '+fmtMmUnit(stp.val);
             const sign = stp.val>=0 ? '+' : '';
             return stp.l+': '+sign+fmtMm(stp.val)+'M vs Budget';
           }
@@ -2873,7 +2881,7 @@ function chatBotAnswer(q){
   if(/top.*opex|gasto/.test(lq)){
     const lines=[['energy_costs','Energy Cost'],['om_costs','O&M'],['maintenance_hubs','Maint. Hubs'],['revenue_share','Revenue Share'],['bank_fees','Bank Fees'],['hub_utilities','Hub Utilities'],['rent_hubs','Hub Rent']];
     const arrR = lines.map(([k,l])=>({l, v:Math.abs(sum(arr(k),CUR,CUR))})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
-    return 'Top OPEX lines '+mlblShort(CUR)+':\n'+arrR.map((x,i)=>(i+1)+'. '+x.l+': '+fmtMm(x.v)+'M').join('\n');
+    return 'Top OPEX lines '+mlblShort(CUR)+':\n'+arrR.map((x,i)=>(i+1)+'. '+x.l+': '+fmtMmUnit(x.v)).join('\n');
   }
   // === PREGUNTAS EJECUTIVAS EARLY DETECTION (antes de KPI lookup, para evitar matches falsos) ===
   if(/\b(main|principales|biggest|top|mayor|mayores) (changes|increase|decrease|aumento|incremento|decremento|jump|drop)/i.test(lq) ||
@@ -3370,7 +3378,7 @@ function chatBotAnswer(q){
       if(!count) return _banner('Chart &middot; '+label+' &middot; '+yr)+'<div class="ri"><div>'+_bad('No data for '+yr)+'</div></div>';
       return _banner('Chart &middot; '+label+' &middot; '+yr)+svg+
         '<div class="ri"><div>Total '+yr+': <b>'+fmtMm(total)+'M</b> &middot; Avg: <b>'+fmtMm(total/count)+'M/mo</b> &middot; '+count+' months</div></div>'+
-        '<div class="ri"><div>Best: '+_good(fmtMm(mxV)+'M')+' ('+mlblShort(mxI)+') &middot; Worst: '+_bad(fmtMm(mnV)+'M')+' ('+mlblShort(mnI)+')</div></div>';
+        '<div class="ri"><div>Best: '+_good(fmtMmUnit(mxV))+' ('+mlblShort(mxI)+') &middot; Worst: '+_bad(fmtMmUnit(mnV))+' ('+mlblShort(mnI)+')</div></div>';
     }
     const cur = _v(chartKey), prev = _v(chartKey, PREV), yoy = _v(chartKey, YOY);
     const mom = prev ? ((cur-prev)/Math.abs(prev))*100 : null;
@@ -3442,7 +3450,7 @@ function chatBotAnswer(q){
   if(/forecast|proyecc/.test(lq)){
     const a=arr('revenue'); if(a.length<3) return 'Need at least 3 months for forecast.';
     const ma=(a[CUR]+a[CUR-1]+a[CUR-2])/3;
-    return 'Revenue forecast next month (3M MA): '+fmtMm(ma)+'M';
+    return 'Revenue forecast next month (3M MA): '+fmtMmUnit(ma);
   }
   // === INTENTS AVANZADOS ===
 
@@ -3478,7 +3486,7 @@ function chatBotAnswer(q){
       if(isWorst ? v < bestVal : v > bestVal){ bestVal = v; bestIdx = i; }
     }
     if(bestIdx >= 0){
-      return (isWorst?'📉 PEOR':'📈 MEJOR')+' mes de '+k.replace(/_/g,' ').toUpperCase()+': '+mlblShort(bestIdx)+' con '+fmtMm(bestVal)+'M';
+      return (isWorst?'📉 PEOR':'📈 MEJOR')+' mes de '+k.replace(/_/g,' ').toUpperCase()+': '+mlblShort(bestIdx)+' con '+fmtMmUnit(bestVal);
     }
   }
 
@@ -3505,7 +3513,7 @@ function chatBotAnswer(q){
     const k = key || 'revenue';
     const a = arr(k);
     const v = sum(a, YTD_START, YTD_END);
-    return '📊 '+k.replace(/_/g,' ').toUpperCase()+' YTD '+CURY+' ('+(YTD_END-YTD_START+1)+' meses): '+fmtMm(v)+'M';
+    return '📊 '+k.replace(/_/g,' ').toUpperCase()+' YTD '+CURY+' ('+(YTD_END-YTD_START+1)+' meses): '+fmtMmUnit(v);
   }
 
   // "como va revenue vs budget" / "actual vs presupuesto"
@@ -3802,7 +3810,7 @@ function chatBotAnswer(q){
     const recs = [];
     const opex = Math.abs(+arr('opex')[CUR]||0), opexB = Math.abs(+barr('opex')[CUR]||0);
     if(opexB && opex > opexB){
-      recs.push({pri:1, area:'OPEX', issue:'Exceeds Budget by '+fmtMm(opex-opexB)+'M', action:'Audit highest spend lines: Energy, O&M, Hub Rent, SG&A'});
+      recs.push({pri:1, area:'OPEX', issue:'Exceeds Budget by '+fmtMmUnit(opex-opexB), action:'Audit highest spend lines: Energy, O&M, Hub Rent, SG&A'});
     }
     const maintCur = Math.abs(+arr('maintenance_opex')[CUR]||0);
     const maintAvg = Math.abs(avg(arr('maintenance_opex'), Math.max(0,CUR-6), CUR-1));
@@ -4053,7 +4061,7 @@ function chatBotAnswer(q){
     const upt8 = _v('uptime_pct');
     if(upt8&&upt8<0.90) out += '<div class="ri"><div><b>Uptime de Red:</b> '+_bad(fmtPct(upt8*100,1))+' — bajo objetivo >90%. Revisar conectores offline.</div></div>';
     const items = topVariances('budNeg',2);
-    if(items.length) out += '<div class="ri"><div><b>Budget execution:</b> Top miss in <b>'+items[0].ln.l+'</b> '+_bad(fmtMm(items[0].delta)+'M')+'. Demand operational deep-dive.</div></div>';
+    if(items.length) out += '<div class="ri"><div><b>Budget execution:</b> Top miss in <b>'+items[0].ln.l+'</b> '+_bad(fmtMmUnit(items[0].delta))+'. Demand operational deep-dive.</div></div>';
     out += '<div class="ri"><div><b>Cash runway:</b> EBITDA '+(_v('ebitda')<0?_bad('negative — runway compression risk'):_good('positive'))+'</div></div>';
     return out;
   }
@@ -4129,7 +4137,7 @@ function chatBotAnswer(q){
     const util_mf = _v('utilization');
     if(util_mf && util_mf < 0.15) out += '<div class="ri"><div>5. <b>Network Utilization</b>: '+_bad(fmtPct(util_mf*100,1))+' (target >25%) — optimize connector deployment strategy.</div></div>';
     const opex = Math.abs(_v('opex')), opexB = Math.abs(_b('opex'));
-    if(opexB && opex > opexB) out += '<div class="ri"><div>6. <b>OPEX discipline</b>: Exceeds Budget by '+_bad(fmtMm(opex-opexB)+'M')+'. Audit energy costs, O&M + hub rent.</div></div>';
+    if(opexB && opex > opexB) out += '<div class="ri"><div>6. <b>OPEX discipline</b>: Exceeds Budget by '+_bad(fmtMmUnit(opex-opexB))+'. Audit energy costs, O&M + hub rent.</div></div>';
     return out;
   }
 
@@ -4235,7 +4243,7 @@ function chatBotAnswer(q){
     let out = _banner('Questions Management Should Prepare');
     const items = topVariances('budNeg', 2);
     items.forEach(function(r,i){
-      out += '<div class="ri"><div>'+(i+1)+'. Detailed root cause for '+_bad(r.ln.l+' miss '+fmtMm(r.delta)+'M')+' and remediation timeline.</div></div>';
+      out += '<div class="ri"><div>'+(i+1)+'. Detailed root cause for '+_bad(r.ln.l+' miss '+fmtMmUnit(r.delta))+' and remediation timeline.</div></div>';
     });
     out += '<div class="ri"><div>3. Q-end forecast vs Plan + sensitivities.</div></div>';
     out += '<div class="ri"><div>4. Cost productivity initiatives and expected savings.</div></div>';
