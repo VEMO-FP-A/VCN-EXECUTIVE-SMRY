@@ -429,7 +429,8 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
     <select id="hl-month" style="font-family:inherit;font-size:13px;padding:8px 14px;border:1px solid var(--b);border-radius:6px;background:#fff;color:var(--forest);font-weight:600;cursor:pointer"></select>
     <span style="margin-left:auto;font-size:11px;color:var(--tx3)">Source: VEMO Monthly Financial Review (PDF/PPTX)</span>
   </div>
-  <div id="hl-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"></div>
+  <div id="hl-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px"></div>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">P&amp;L Commentary</div>
   <div id="hl-pl" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px"></div>
 
   <div id="pl-vemo" class="vemo-wrap"></div>
@@ -556,7 +557,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-14 20:26</div>
+  <div>build 2026-07-15 10:46</div>
 </footer>
 
 <script>
@@ -4894,9 +4895,14 @@ function renderMonthlyHL(){
     const sel = document.getElementById('hl-month');
     if(!sel) return;
     const months = Object.keys(MONTHLY_HL).filter(k=>!k.startsWith('_'));
-    months.reverse();
+    months.reverse(); // most recent first
     sel.innerHTML = months.map(m=>'<option value="'+m+'">'+m+'</option>').join('');
-    if(months.length) sel.value = months[0];
+    // Default to most recent month that has actual H&L data (highlights or lowlights populated)
+    const hlDefault = months.find(function(m){
+      const d = MONTHLY_HL[m];
+      return d && ((d.highlights && d.highlights.length > 0) || (d.lowlights && d.lowlights.length > 0));
+    }) || months[0];
+    sel.value = hlDefault;
     sel.addEventListener('change', renderMonthlyHL);
     renderMonthlyHL();
   }
