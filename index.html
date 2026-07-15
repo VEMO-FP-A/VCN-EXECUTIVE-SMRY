@@ -426,16 +426,11 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
   <div class="vemo-section-title" style="margin-top:18px">Monthly <b>Highlights &amp; Lowlights</b></div>
   <div style="background:var(--sf);border:1px solid var(--b);border-radius:var(--r);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
     <span style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Select Month:</span>
-    <select id="hl-month" style="font-family:inherit;font-size:13px;padding:8px 14px;border:1px solid var(--b);border-radius:6px;background:#fff;color:var(--forest);font-weight:600;cursor:pointer">
-      <option value="May-26">May-26</option>
-      <option value="Apr-26">Apr-26</option>
-      <option value="Mar-26">Mar-26</option>
-      <option value="Feb-26">Feb-26</option>
-      <option value="Jan-26">Jan-26</option>
-    </select>
+    <select id="hl-month" style="font-family:inherit;font-size:13px;padding:8px 14px;border:1px solid var(--b);border-radius:6px;background:#fff;color:var(--forest);font-weight:600;cursor:pointer"></select>
     <span style="margin-left:auto;font-size:11px;color:var(--tx3)">Source: VEMO Monthly Financial Review (PDF/PPTX)</span>
   </div>
-  <div id="hl-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px"></div>
+  <div id="hl-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"></div>
+  <div id="hl-pl" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px"></div>
 
   <div id="pl-vemo" class="vemo-wrap"></div>
 
@@ -448,13 +443,11 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
       <button class="active" data-sub="main">Main KPIs</button>
       <button data-sub="net-kpi">Network KPIs</button>
       <button data-sub="perf-kpi">Main Performance KPIs</button>
-      <button data-sub="fin">Financial</button>
     </div>
   </div>
   <div class="rsub active" data-sub="main"><div id="rat-main"></div></div>
   <div class="rsub" data-sub="net-kpi"><div id="rat-net-kpi"></div></div>
   <div class="rsub" data-sub="perf-kpi"><div id="rat-perf-kpi"></div></div>
-  <div class="rsub" data-sub="fin"><div id="rat-fin"></div></div>
 
 
 
@@ -563,7 +556,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-14 20:19</div>
+  <div>build 2026-07-14 20:26</div>
 </footer>
 
 <script>
@@ -4899,7 +4892,13 @@ function renderMonthlyHL(){
 (function(){
   function bind(){
     const sel = document.getElementById('hl-month');
-    if(sel){ sel.addEventListener('change', renderMonthlyHL); renderMonthlyHL(); }
+    if(!sel) return;
+    const months = Object.keys(MONTHLY_HL).filter(k=>!k.startsWith('_'));
+    months.reverse();
+    sel.innerHTML = months.map(m=>'<option value="'+m+'">'+m+'</option>').join('');
+    if(months.length) sel.value = months[0];
+    sel.addEventListener('change', renderMonthlyHL);
+    renderMonthlyHL();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind);
   else setTimeout(bind, 100);
