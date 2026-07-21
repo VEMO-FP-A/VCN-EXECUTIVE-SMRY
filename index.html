@@ -535,7 +535,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-20 20:19</div>
+  <div>build 2026-07-20 20:38</div>
 </footer>
 
 <script>
@@ -600,6 +600,7 @@ let PL_SHOW_HISTORIC = false;
 let PL_PERIOD_MODE = 'monthly';
 const LI = D.last_actual_idx||0;
 const KPI_LI = (D.kpi_last_actual_idx!=null) ? D.kpi_last_actual_idx : LI;  // last idx where operational KPIs have data
+const OPS_CUR = KPI_LI;  // operational current period (may lag financial by 1 month)
 const CUR=LI, PREV=LI-1, YOY=LI-12;
 const CURY=(D.months[CUR]||'').split('-')[0];
 let YTD_START=0;
@@ -721,9 +722,9 @@ function renderKPICards(){
   if(!el) return;
   el.innerHTML = KPI13.map((ki,i)=>{
     const A=arrCand(ki.keys), B=barrCand(ki.keys);
-    const val = getDisplayVal(ki, CUR);
-    const valPrev = getDisplayVal(ki, PREV);
-    const valBud = B.length? (ki.agg==='eop'?eop(B,CUR):(ki.agg==='avg'?avg(B,CUR,CUR):sum(B,CUR,CUR))) : 0;
+    const val = getDisplayVal(ki, OPS_CUR);
+    const valPrev = getDisplayVal(ki, OPS_CUR-1);
+    const valBud = B.length? (ki.agg==='eop'?eop(B,OPS_CUR):(ki.agg==='avg'?avg(B,OPS_CUR,OPS_CUR):sum(B,OPS_CUR,OPS_CUR))) : 0;
 
     const momPct=devPct(val,valPrev), momBps=devBps(val,valPrev);
     const budPct=valBud?devPct(val,valBud):null, budBps=(valBud&&ki.type==='pct')?devBps(val,valBud):null;
@@ -740,7 +741,7 @@ function renderKPICards(){
     return '<div class="kpi-card '+cardCls+'">'+
       '<div class="kpi-l">'+ki.l+(_unitLbl?' <span class="kpi-unit-note">'+_unitLbl+'</span>':'')+'</div>'+
       '<div class="kpi-v">'+fmtVal(val,ki)+'</div>'+
-      '<div class="kpi-mom"><span class="arr '+momCls+'">'+arrSym+'</span> <span class="'+momCls+'">'+momTxt+'</span> <span style="color:var(--tx3)">vs '+mlblShort(PREV)+'</span></div>'+
+      '<div class="kpi-mom"><span class="arr '+momCls+'">'+arrSym+'</span> <span class="'+momCls+'">'+momTxt+'</span> <span style="color:var(--tx3)">vs '+mlblShort(OPS_CUR-1)+'</span></div>'+
       (valBud?
         '<div class="kpi-bud"><span><span class="lbl">vs Budget</span> '+fmtVal(valBud,ki)+'</span><span class="v '+budCls+'">'+budTxt+'</span></div>'
        :'<div class="kpi-bud"><span class="lbl">Budget</span><span class="v" style="color:var(--tx3)">n.a.</span></div>')+
@@ -766,7 +767,8 @@ function renderKPISparklines(){
 
     // Collect full actuals (treat zero as null for sparse KPIs)
     const rawVals = [], rawBuds = [];
-    for(let j=0; j<=LI; j++){
+    const _sparkEnd = isSparse ? KPI_LI : LI;
+    for(let j=0; j<=_sparkEnd; j++){
       let v = ki.agg==='eop'? eop(A,j) : (ki.agg==='avg'? avg(A,j,j) : sum(A,j,j));
       if((isSparse || ki.fallbackToPrev) && (v===0||v==null)) v = null;
       rawVals.push(v==null ? null : (ki.type==='pct' ? (v*100) : v));
@@ -775,15 +777,16 @@ function renderKPISparklines(){
     }
 
     // Trim: find first and last non-null index
-    let xFirst = 0, xLast = LI;
-    for(let j=0; j<=LI; j++){ if(rawVals[j]!=null){ xFirst=j; break; } }
+    // For sparse (operational) KPIs, clip to KPI_LI so no null gap at June
+    let xFirst = 0, xLast = isSparse ? KPI_LI : LI;
+    for(let j=0; j<=xLast; j++){ if(rawVals[j]!=null){ xFirst=j; break; } }
     // Ensure at least 3 months of context
-    xFirst = Math.max(0, Math.min(xFirst, LI-2));
+    xFirst = Math.max(0, Math.min(xFirst, xLast-2));
     // For sparse KPIs, floor at Jan-26 (idx 12) to avoid pre-launch noise
     if(isSparse){ xFirst = Math.max(xFirst, 12); }
     // Also consider budget start
     let bFirst = xFirst;
-    for(let j=12; j<=LI; j++){ if(rawBuds[j]!=null){ bFirst=j; break; } }
+    for(let j=12; j<=xLast; j++){ if(rawBuds[j]!=null){ bFirst=j; break; } }
     xFirst = Math.min(xFirst, bFirst);
 
     const labels = [], vals = [], buds = [];
@@ -1502,7 +1505,7 @@ function devCellPct(actual,ref,isPct){
 // Estado global del rango: 'ytd' (solo año actual) o 'historic' (todos los meses con dato)
 let KPI_RANGE = 'ytd';
 function rangeStart(){ return KPI_RANGE === 'historic' ? 0 : YTD_START; }
-function rangeEnd(){ return YTD_END; }
+function rangeEnd(){ return KPI_LI; }  // operational tables end at last ops data month
 
 // FORMATO TIPO 'Tabla de Metricas Operacionales' — lista expandible, click = mes a mes con vs Budget
 function renderRatioExpandable(targetId, list, sectionTitle){
@@ -1545,8 +1548,8 @@ function renderRatioExpandable(targetId, list, sectionTitle){
       }
       return v;
     }
-    const valCur = getV(A, CUR);
-    const valBud = B.length? getV(B, CUR) : 0;
+    const valCur = getV(A, OPS_CUR);
+    const valBud = B.length? getV(B, OPS_CUR) : 0;
     // Variation vs Budget mes actual
     let varBudTxt='n.a.', varBudCls='';
     if(valBud){
@@ -1562,7 +1565,7 @@ function renderRatioExpandable(targetId, list, sectionTitle){
         varBudCls = isNeg?'neg':'pos';
       }
     }
-    const summary = '<b>'+mlbl(CUR)+': '+fmtVal(valCur,ki)+'</b>' +
+    const summary = '<b>'+mlbl(OPS_CUR)+': '+fmtVal(valCur,ki)+'</b>' +
                     (valBud? ' · Bud '+fmtVal(valBud,ki)+' (<span class="'+varBudCls+'">'+varBudTxt+'</span>)' : '');
 
     // Inner table: rango variable segun toggle (YTD o historico)
@@ -1641,7 +1644,7 @@ function renderRatioCharts(containerId, chartDefs){
     // Combined chart (multiple lines in one)
     if(cd.combined){
       const stats = cd.combined.map(c => {
-        const A = D[c.k]||[]; const v = sum(A, CUR, CUR);
+        const A = D[c.k]||[]; const v = sum(A, OPS_CUR, OPS_CUR);
         return c.l+': '+fmtK(v,1);
       }).join(' · ');
       html += '<div class="chart-card" style="grid-column:1 / -1">'+
@@ -1652,9 +1655,9 @@ function renderRatioCharts(containerId, chartDefs){
     const A = arrCand(cd.keys || [cd.k]);
     if(!A.length) return;
     let val;
-    if(cd.agg==='eop') val=eop(A,CUR);
-    else if(cd.agg==='sum') val=sum(A,CUR,CUR);
-    else val=avg(A,CUR,CUR);
+    if(cd.agg==='eop') val=eop(A,OPS_CUR);
+    else if(cd.agg==='sum') val=sum(A,OPS_CUR,OPS_CUR);
+    else val=avg(A,OPS_CUR,OPS_CUR);
     const fmt = cd.type==='pct' ? (v=>(v*100).toFixed(1)+'%') : (cd.fmt==='int'?(v=>Math.abs(v)>=1e6?fmtMmUnit(v):fmtInt(v)):(cd.fmt==='k'?(v=>fmtK(v,1)):(v=>fmtN(v,1))));
     // Date range: find first non-null/non-zero for sparse KPIs
     const isSparseK = A && SPARSE_KPI_KEYS && SPARSE_KPI_KEYS.has(cd.k);
@@ -1664,8 +1667,9 @@ function renderRatioCharts(containerId, chartDefs){
         if(A[_j]!=null && (!isSparseK || A[_j]!==0)){ xFirstK=_j; break; }
       }
     }
-    const dateRangeTxt = (xFirstK > 0 || true) ? ' <span style="font-size:9px;color:var(--tx3);font-weight:400">'+mlblShort(xFirstK)+' – '+mlblShort(LI)+'</span>' : '';
-    const stat = mlbl(CUR)+': '+fmt(val)+dateRangeTxt;
+    const xLastK = isSparseK ? KPI_LI : LI;
+    const dateRangeTxt = ' <span style="font-size:9px;color:var(--tx3);font-weight:400">'+mlblShort(xFirstK)+' – '+mlblShort(xLastK)+'</span>';
+    const stat = mlbl(OPS_CUR)+': '+fmt(val)+dateRangeTxt;
     const B = barrCand(cd.keys || [cd.k]);
     const hasBud = B.length && B.some(v=>v!=null&&v!==0);
     const isCostKey = /energy_cost|cogs|opex|corporate_exp|sga/.test(cd.k);
