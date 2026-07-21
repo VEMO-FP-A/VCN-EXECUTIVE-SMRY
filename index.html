@@ -558,7 +558,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-21 13:07</div>
+  <div>build 2026-07-21 13:15</div>
 </footer>
 
 <script>
@@ -1714,29 +1714,41 @@ function hierDev(vCur, vRef, row){
 
 function renderHierTable(targetId, hierDef){
   const tgt = document.getElementById(targetId); if(!tgt) return;
-  const PREV = OPS_CUR > 0 ? OPS_CUR - 1 : null;
   const CUR_M = OPS_CUR;
+  const isHistoric = (KPI_RANGE === 'historic');
+
+  // Find first month with any non-null data across all rows
+  let firstDataIdx = CUR_M;
+  hierDef.forEach(sec => sec.rows.forEach(row => {
+    if(!row.k) return;
+    const arr = D[row.k] || [];
+    for(let i=0; i<=CUR_M; i++){
+      if(arr[i]!=null && arr[i]!==0){ firstDataIdx = Math.min(firstDataIdx, i); break; }
+    }
+  }));
 
   let html = '<div class="hier-tbl-wrap"><table class="hier-tbl"><thead><tr>';
   html += '<th style="text-align:left">Section</th>';
   html += '<th style="text-align:left">Concept</th>';
   html += '<th>Units</th>';
-  if(PREV!=null) html += '<th>'+mlblShort(PREV)+'</th>';
-  html += '<th>'+mlblShort(CUR_M)+'</th>';
-  html += '<th>Budget '+mlblShort(CUR_M)+'</th>';
-  html += '<th>MoM</th>';
-  html += '<th>Vs. Budget</th>';
+
+  if(isHistoric){
+    // Show all months from first data to current
+    for(let i=firstDataIdx; i<=CUR_M; i++) html += '<th>'+mlblShort(i)+'</th>';
+  } else {
+    // YTD: prev + current + budget + MoM + VsBudget
+    const PREV = CUR_M > 0 ? CUR_M - 1 : null;
+    if(PREV!=null) html += '<th>'+mlblShort(PREV)+'</th>';
+    html += '<th>'+mlblShort(CUR_M)+'</th>';
+    html += '<th>Budget '+mlblShort(CUR_M)+'</th>';
+    html += '<th>MoM</th>';
+    html += '<th>Vs. Budget</th>';
+  }
   html += '</tr></thead><tbody>';
 
   hierDef.forEach(section=>{
     const nRows = section.rows.length;
     section.rows.forEach((row, ri)=>{
-      const vPrev = PREV!=null ? hierVal(row, PREV) : null;
-      const vCur  = hierVal(row, CUR_M);
-      const vBud  = hierBudVal(row, CUR_M);
-      const mom   = hierDev(vCur, vPrev, row);
-      const vsb   = hierDev(vCur, vBud,  row);
-
       html += '<tr class="'+(row.bold?'hier-bold':'hier-sub')+'">';
       if(ri===0){
         html += '<td class="hier-sec" rowspan="'+nRows+'">'+section.sec.replace(/\\n/g,'<br>')+'</td>';
@@ -1744,11 +1756,26 @@ function renderHierTable(targetId, hierDef){
       const conCls = 'hier-con'+(row.bold?'':' hier-indent');
       html += '<td class="'+conCls+'">'+row.l.replace(/\\n/g,'<br>')+'</td>';
       html += '<td class="hier-unit">'+row.unit+'</td>';
-      if(PREV!=null) html += '<td>'+(vPrev!=null?hierFmt(vPrev,row):'—')+'</td>';
-      html += '<td>'+(vCur!=null?'<b>'+hierFmt(vCur,row)+'</b>':'—')+'</td>';
-      html += '<td class="hier-bud">'+(vBud!=null?hierFmt(vBud,row):'—')+'</td>';
-      html += '<td class="'+(mom.hasVal?(mom.neg?'neg':'pos'):'na-cell')+'">'+mom.txt+'</td>';
-      html += '<td class="'+(vsb.hasVal?(vsb.neg?'neg':'pos'):'na-cell')+'">'+vsb.txt+'</td>';
+
+      if(isHistoric){
+        for(let i=firstDataIdx; i<=CUR_M; i++){
+          const v = hierVal(row, i);
+          const isCur = (i===CUR_M);
+          html += '<td>'+(v!=null?(isCur?'<b>'+hierFmt(v,row)+'</b>':hierFmt(v,row)):'—')+'</td>';
+        }
+      } else {
+        const PREV = CUR_M > 0 ? CUR_M - 1 : null;
+        const vPrev = PREV!=null ? hierVal(row, PREV) : null;
+        const vCur  = hierVal(row, CUR_M);
+        const vBud  = hierBudVal(row, CUR_M);
+        const mom   = hierDev(vCur, vPrev, row);
+        const vsb   = hierDev(vCur, vBud,  row);
+        if(PREV!=null) html += '<td>'+(vPrev!=null?hierFmt(vPrev,row):'—')+'</td>';
+        html += '<td>'+(vCur!=null?'<b>'+hierFmt(vCur,row)+'</b>':'—')+'</td>';
+        html += '<td class="hier-bud">'+(vBud!=null?hierFmt(vBud,row):'—')+'</td>';
+        html += '<td class="'+(mom.hasVal?(mom.neg?'neg':'pos'):'na-cell')+'">'+mom.txt+'</td>';
+        html += '<td class="'+(vsb.hasVal?(vsb.neg?'neg':'pos'):'na-cell')+'">'+vsb.txt+'</td>';
+      }
       html += '</tr>';
     });
   });
