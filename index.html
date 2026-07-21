@@ -558,7 +558,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-21 13:15</div>
+  <div>build 2026-07-21 13:21</div>
 </footer>
 
 <script>
@@ -1715,7 +1715,7 @@ function hierDev(vCur, vRef, row){
 function renderHierTable(targetId, hierDef){
   const tgt = document.getElementById(targetId); if(!tgt) return;
   const CUR_M = OPS_CUR;
-  const isHistoric = (KPI_RANGE === 'historic');
+  const PREV  = CUR_M > 0 ? CUR_M - 1 : null;
 
   // Find first month with any non-null data across all rows
   let firstDataIdx = CUR_M;
@@ -1727,28 +1727,26 @@ function renderHierTable(targetId, hierDef){
     }
   }));
 
+  // Always show all months from firstDataIdx to CUR_M + MoM + Vs. Budget
   let html = '<div class="hier-tbl-wrap"><table class="hier-tbl"><thead><tr>';
   html += '<th style="text-align:left">Section</th>';
   html += '<th style="text-align:left">Concept</th>';
   html += '<th>Units</th>';
-
-  if(isHistoric){
-    // Show all months from first data to current
-    for(let i=firstDataIdx; i<=CUR_M; i++) html += '<th>'+mlblShort(i)+'</th>';
-  } else {
-    // YTD: prev + current + budget + MoM + VsBudget
-    const PREV = CUR_M > 0 ? CUR_M - 1 : null;
-    if(PREV!=null) html += '<th>'+mlblShort(PREV)+'</th>';
-    html += '<th>'+mlblShort(CUR_M)+'</th>';
-    html += '<th>Budget '+mlblShort(CUR_M)+'</th>';
-    html += '<th>MoM</th>';
-    html += '<th>Vs. Budget</th>';
-  }
+  for(let i=firstDataIdx; i<=CUR_M; i++) html += '<th'+(i===CUR_M?' style="font-weight:700"':'')+'>'+mlblShort(i)+'</th>';
+  html += '<th style="border-left:2px solid var(--teal)">Budget '+mlblShort(CUR_M)+'</th>';
+  html += '<th>MoM</th>';
+  html += '<th>Vs. Budget</th>';
   html += '</tr></thead><tbody>';
 
   hierDef.forEach(section=>{
     const nRows = section.rows.length;
     section.rows.forEach((row, ri)=>{
+      const vCur = hierVal(row, CUR_M);
+      const vPrev = PREV!=null ? hierVal(row, PREV) : null;
+      const vBud  = hierBudVal(row, CUR_M);
+      const mom   = hierDev(vCur, vPrev, row);
+      const vsb   = hierDev(vCur, vBud,  row);
+
       html += '<tr class="'+(row.bold?'hier-bold':'hier-sub')+'">';
       if(ri===0){
         html += '<td class="hier-sec" rowspan="'+nRows+'">'+section.sec.replace(/\\n/g,'<br>')+'</td>';
@@ -1757,25 +1755,16 @@ function renderHierTable(targetId, hierDef){
       html += '<td class="'+conCls+'">'+row.l.replace(/\\n/g,'<br>')+'</td>';
       html += '<td class="hier-unit">'+row.unit+'</td>';
 
-      if(isHistoric){
-        for(let i=firstDataIdx; i<=CUR_M; i++){
-          const v = hierVal(row, i);
-          const isCur = (i===CUR_M);
-          html += '<td>'+(v!=null?(isCur?'<b>'+hierFmt(v,row)+'</b>':hierFmt(v,row)):'—')+'</td>';
-        }
-      } else {
-        const PREV = CUR_M > 0 ? CUR_M - 1 : null;
-        const vPrev = PREV!=null ? hierVal(row, PREV) : null;
-        const vCur  = hierVal(row, CUR_M);
-        const vBud  = hierBudVal(row, CUR_M);
-        const mom   = hierDev(vCur, vPrev, row);
-        const vsb   = hierDev(vCur, vBud,  row);
-        if(PREV!=null) html += '<td>'+(vPrev!=null?hierFmt(vPrev,row):'—')+'</td>';
-        html += '<td>'+(vCur!=null?'<b>'+hierFmt(vCur,row)+'</b>':'—')+'</td>';
-        html += '<td class="hier-bud">'+(vBud!=null?hierFmt(vBud,row):'—')+'</td>';
-        html += '<td class="'+(mom.hasVal?(mom.neg?'neg':'pos'):'na-cell')+'">'+mom.txt+'</td>';
-        html += '<td class="'+(vsb.hasVal?(vsb.neg?'neg':'pos'):'na-cell')+'">'+vsb.txt+'</td>';
+      for(let i=firstDataIdx; i<=CUR_M; i++){
+        const v = hierVal(row, i);
+        const isCur = (i===CUR_M);
+        html += '<td'+(isCur?' style="font-weight:700"':'')+'>'+
+          (v!=null ? hierFmt(v,row) : '—')+'</td>';
       }
+      html += '<td class="hier-bud" style="border-left:2px solid var(--teal)">'+
+        (vBud!=null?hierFmt(vBud,row):'—')+'</td>';
+      html += '<td class="'+(mom.hasVal?(mom.neg?'neg':'pos'):'na-cell')+'">'+mom.txt+'</td>';
+      html += '<td class="'+(vsb.hasVal?(vsb.neg?'neg':'pos'):'na-cell')+'">'+vsb.txt+'</td>';
       html += '</tr>';
     });
   });
@@ -2070,16 +2059,8 @@ function rerenderRatioTablesOnly(){
     });
     renderRatioExpandable('rat-main', RATIOS.main, '');
   }
-  // rat-net-kpi / rat-perf-kpi: hierarchical tables — remove and re-render
-  ['rat-net-kpi','rat-perf-kpi'].forEach(id=>{
-    const tgt = document.getElementById(id); if(!tgt) return;
-    tgt.querySelectorAll('.hier-tbl-wrap').forEach(el=>el.remove());
-    tgt.querySelectorAll('[data-range]').forEach(b=>{
-      b.classList.toggle('active', b.dataset.range===KPI_RANGE);
-    });
-    if(id==='rat-net-kpi')  renderHierTable(id, NET_KPI_HIER);
-    if(id==='rat-perf-kpi') renderHierTable(id, PERF_KPI_HIER);
-  });
+  // rat-net-kpi / rat-perf-kpi: hierarchical tables — static (no toggle), no-op on range change
+  // Tables always show all months; nothing to re-render on KPI_RANGE toggle.
 }
 
 function renderAllRatios(){
@@ -2099,20 +2080,12 @@ function renderAllRatios(){
       '</div>');
     renderRatioExpandable(targetId, list, '');
   }
-  // Hierarchical sections — chart + toggle + hierarchical table
+  // Hierarchical sections — chart + hierarchical table (no toggle: table always shows all months)
   function renderHierPair(targetId, hierDef, charts, sectionTitle){
     const tgt=document.getElementById(targetId); if(!tgt) return;
     tgt.innerHTML='';
     tgt.insertAdjacentHTML('beforeend','<div class="vemo-section-title">'+sectionTitle+'</div>');
     renderRatioCharts(targetId, charts);
-    tgt.insertAdjacentHTML('beforeend',
-      '<div style="display:flex;align-items:center;gap:10px;margin:12px 0 4px 0;justify-content:flex-end">'+
-        '<span style="font-family:\'Space Grotesk\',sans-serif;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Chart range ↓</span>'+
-        '<div class="stabs" style="margin:0">'+
-          '<button class="'+(KPI_RANGE==='ytd'?'active':'')+'" data-range="ytd">YTD</button>'+
-          '<button class="'+(KPI_RANGE==='historic'?'active':'')+'" data-range="historic">Historical</button>'+
-        '</div>'+
-      '</div>');
     renderHierTable(targetId, hierDef);
   }
 
