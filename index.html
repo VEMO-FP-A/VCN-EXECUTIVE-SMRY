@@ -535,7 +535,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-20 16:07</div>
+  <div>build 2026-07-20 20:19</div>
 </footer>
 
 <script>
@@ -649,37 +649,9 @@ document.getElementById('ratios-stabs').closest('section').addEventListener('cli
 
 /* ============ ALERTS ============ */
 function renderAlerts(){
-  // Alerts not applicable for VCN — hide panel
+  // Alerts panel hidden for VCN (not applicable)
   const el=document.getElementById('alerts-panel');
   if(el) el.style.display='none';
-  return;
-  const a=[];
-  const ebitda=+arr('ebitda')[CUR]||0, ebitdaPrev=+arr('ebitda')[PREV]||0;
-  const uptimeA=+arr('uptime_pct')[CUR]||0;
-  const utilA=+arr('utilization')[CUR]||0;
-  const connectorsA=+arr('total_connectors')[CUR]||0;
-  const connectorsPrevA=+arr('total_connectors')[PREV]||0;
-
-  if(ebitdaPrev&&Math.abs((ebitda-ebitdaPrev)/Math.abs(ebitdaPrev))>0.30){
-    a.push({i:'📉',l:'EBITDA Declined MoM',d:fmtPct((ebitda-ebitdaPrev)/Math.abs(ebitdaPrev)*100,1)+' vs '+mlblShort(PREV)});
-  }
-  if(uptimeA&&uptimeA<0.90){
-    a.push({i:'⚡',l:'Network Uptime Low',d:'Uptime = '+fmtPct(uptimeA*100,1)+' (target >90%)'});
-  }
-  if(utilA&&utilA<0.10){
-    a.push({i:'📉',l:'Network Utilization Low',d:'Utilization = '+fmtPct(utilA*100,1)});
-  }
-  if(connectorsPrevA&&connectorsA&&(connectorsA-connectorsPrevA)/connectorsPrevA<-0.02){
-    a.push({i:'📉',l:'Connector Count Declined MoM',d:fmtPct((connectorsA-connectorsPrevA)/connectorsPrevA*100,1)+' vs '+mlblShort(PREV)});
-  }
-
-  const el=document.getElementById('alerts-panel');
-  if(!a.length){
-    el.innerHTML='<div class="alerts-hd">⚠ Attention · '+mlblShort(CUR)+' · no critical alerts</div><div style="font-size:11px;color:#8a6d1c">All key indicators within range. 👍</div>';
-    return;
-  }
-  el.innerHTML='<div class="alerts-hd">⚠ Attention · '+mlblShort(CUR)+' · '+a.length+' alert'+(a.length>1?'s':'')+' active</div>'+
-    '<div class="alerts-grid">'+a.map(x=>'<div class="alert"><span class="ico">'+x.i+'</span><div><div class="l">'+x.l+'</div><div class="d">'+x.d+'</div></div></div>').join('')+'</div>';
 }
 
 /* ============ 13 KPI CARDS ============ */
