@@ -569,7 +569,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-21 22:52</div>
+  <div>build 2026-07-21 23:14</div>
 </footer>
 
 <script>
@@ -1724,10 +1724,10 @@ function hierDev(vCur, vRef, row){
 
 function hierYTDAvg(row){
   if(!row.k) return null;
-  const arr = D[row.k]||[];
   const vals=[];
+  // Use hierVal so scale, agg, and null-handling are consistent with monthly columns
   for(let i=YTD_START; i<=OPS_CUR; i++){
-    const v=arr[i];
+    const v = hierVal(row, i);
     if(v!=null) vals.push(v);
   }
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
