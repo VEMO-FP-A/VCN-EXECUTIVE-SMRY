@@ -233,6 +233,17 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 .hier-tbl td.neg{color:var(--red);font-weight:600}
 .hier-tbl td.pos{color:var(--teal);font-weight:600}
 .hier-tbl td.na-cell{color:var(--tx3)}
+/* Group header rows */
+.hier-tbl thead tr.hier-grp-row th{padding:7px 11px;font-size:10px;text-align:center;letter-spacing:0.08em;border-bottom:1px solid rgba(255,255,255,0.2)}
+.hier-tbl thead tr.hier-grp-row th.hier-grp-act{background:var(--teal)}
+.hier-tbl thead tr.hier-grp-row th.hier-grp-bud{background:#7A5C38}
+.hier-tbl thead tr.hier-grp-row th.hier-grp-dev{background:#2D4A5A}
+.hier-tbl thead tr.hier-sub-row th{background:var(--forest);padding:8px 11px;font-size:10px;border-right:1px solid rgba(255,255,255,0.12)}
+.hier-tbl thead tr.hier-sub-row th.sub-act{background:#1A8F8F}
+.hier-tbl thead tr.hier-sub-row th.sub-bud{background:#9A7A52}
+.hier-tbl thead tr.hier-sub-row th.sub-dev{background:#3D6070}
+.hier-tbl td.hier-ytd{color:var(--tx2)}
+.hier-tbl td.hier-cur{font-weight:700}
 
 /* === CHATBOT === */
 .chatbot-wrap{background:var(--sf);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:18px;display:flex;flex-direction:column}
@@ -558,7 +569,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-21 15:56</div>
+  <div>build 2026-07-21 22:16</div>
 </footer>
 
 <script>
@@ -799,17 +810,16 @@ function renderKPISparklines(){
       rawBuds.push(bv!=null && bv!==0 ? (ki.type==='pct'?(bv*100):bv) : null);
     }
 
-    // Trim: find first and last non-null index
-    // For sparse (operational) KPIs, clip to KPI_LI so no null gap at June
+    // Trim: find first month with a non-null, non-zero value (skip pre-launch zeros)
     let xFirst = 0, xLast = isSparse ? KPI_LI : LI;
-    for(let j=0; j<=xLast; j++){ if(rawVals[j]!=null){ xFirst=j; break; } }
+    for(let j=0; j<=xLast; j++){ if(rawVals[j]!=null && rawVals[j]!==0){ xFirst=j; break; } }
     // Ensure at least 3 months of context
     xFirst = Math.max(0, Math.min(xFirst, xLast-2));
     // For sparse KPIs, floor at Jan-26 (idx 12) to avoid pre-launch noise
     if(isSparse){ xFirst = Math.max(xFirst, 12); }
-    // Also consider budget start
+    // Also consider budget start (never go earlier than Jan-26 for budget)
     let bFirst = xFirst;
-    for(let j=12; j<=xLast; j++){ if(rawBuds[j]!=null){ bFirst=j; break; } }
+    for(let j=Math.min(xFirst,12); j<=xLast; j++){ if(rawBuds[j]!=null){ bFirst=j; break; } }
     xFirst = Math.min(xFirst, bFirst);
 
     const labels = [], vals = [], buds = [];
@@ -1712,39 +1722,56 @@ function hierDev(vCur, vRef, row){
   }
 }
 
+function hierYTDAvg(row){
+  if(!row.k) return null;
+  const arr = D[row.k]||[];
+  const vals=[];
+  for(let i=YTD_START; i<=OPS_CUR; i++){
+    const v=arr[i];
+    if(v!=null) vals.push(v);
+  }
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+
 function renderHierTable(targetId, hierDef){
   const tgt = document.getElementById(targetId); if(!tgt) return;
   const CUR_M = OPS_CUR;
   const PREV  = CUR_M > 0 ? CUR_M - 1 : null;
+  const curLbl  = mlblShort(CUR_M);
+  const prevLbl = PREV!=null ? mlblShort(PREV) : '—';
 
-  // Find first month with any non-null data across all rows
-  let firstDataIdx = CUR_M;
-  hierDef.forEach(sec => sec.rows.forEach(row => {
-    if(!row.k) return;
-    const arr = D[row.k] || [];
-    for(let i=0; i<=CUR_M; i++){
-      if(arr[i]!=null && arr[i]!==0){ firstDataIdx = Math.min(firstDataIdx, i); break; }
-    }
-  }));
-
-  // Always show all months from firstDataIdx to CUR_M + MoM + Vs. Budget
-  let html = '<div class="hier-tbl-wrap"><table class="hier-tbl"><thead><tr>';
-  html += '<th style="text-align:left">Section</th>';
-  html += '<th style="text-align:left">Concept</th>';
-  html += '<th>Units</th>';
-  for(let i=firstDataIdx; i<=CUR_M; i++) html += '<th'+(i===CUR_M?' style="font-weight:700"':'')+'>'+mlblShort(i)+'</th>';
-  html += '<th style="border-left:2px solid var(--teal)">Budget '+mlblShort(CUR_M)+'</th>';
-  html += '<th>MoM</th>';
-  html += '<th>Vs. Budget</th>';
-  html += '</tr></thead><tbody>';
+  // Two-row grouped header: Actuals | Budget | Deviation vs. CUR_M (%)
+  let html = '<div class="hier-tbl-wrap"><table class="hier-tbl"><thead>';
+  // Row 1 — group labels
+  html += '<tr class="hier-grp-row">';
+  html += '<th rowspan="2" style="text-align:left;vertical-align:bottom;background:var(--forest)">Section</th>';
+  html += '<th rowspan="2" style="text-align:left;vertical-align:bottom;background:var(--forest)">Concept</th>';
+  html += '<th rowspan="2" style="vertical-align:bottom;background:var(--forest)">Units</th>';
+  html += '<th colspan="3" class="hier-grp-act">Actuals</th>';
+  html += '<th colspan="1" class="hier-grp-bud">Budget</th>';
+  html += '<th colspan="3" class="hier-grp-dev">Deviation vs. '+curLbl+' (%)</th>';
+  html += '</tr>';
+  // Row 2 — sub-headers
+  html += '<tr class="hier-sub-row">';
+  html += '<th class="sub-act">'+prevLbl+'</th>';
+  html += '<th class="sub-act" style="font-weight:800">'+curLbl+'</th>';
+  html += '<th class="sub-act">YTD Avg.</th>';
+  html += '<th class="sub-bud">Budget '+curLbl+'</th>';
+  html += '<th class="sub-dev">MoM</th>';
+  html += '<th class="sub-dev">Vs. YTD Avg</th>';
+  html += '<th class="sub-dev">Vs. Budget</th>';
+  html += '</tr>';
+  html += '</thead><tbody>';
 
   hierDef.forEach(section=>{
     const nRows = section.rows.length;
     section.rows.forEach((row, ri)=>{
-      const vCur = hierVal(row, CUR_M);
       const vPrev = PREV!=null ? hierVal(row, PREV) : null;
+      const vCur  = hierVal(row, CUR_M);
+      const vYTD  = hierYTDAvg(row);
       const vBud  = hierBudVal(row, CUR_M);
       const mom   = hierDev(vCur, vPrev, row);
+      const vsYTD = hierDev(vCur, vYTD,  row);
       const vsb   = hierDev(vCur, vBud,  row);
 
       html += '<tr class="'+(row.bold?'hier-bold':'hier-sub')+'">';
@@ -1754,16 +1781,15 @@ function renderHierTable(targetId, hierDef){
       const conCls = 'hier-con'+(row.bold?'':' hier-indent');
       html += '<td class="'+conCls+'">'+row.l.replace(/\\n/g,'<br>')+'</td>';
       html += '<td class="hier-unit">'+row.unit+'</td>';
-
-      for(let i=firstDataIdx; i<=CUR_M; i++){
-        const v = hierVal(row, i);
-        const isCur = (i===CUR_M);
-        html += '<td'+(isCur?' style="font-weight:700"':'')+'>'+
-          (v!=null ? hierFmt(v,row) : '—')+'</td>';
-      }
-      html += '<td class="hier-bud" style="border-left:2px solid var(--teal)">'+
-        (vBud!=null?hierFmt(vBud,row):'—')+'</td>';
+      // Actuals
+      html += '<td>'+(vPrev!=null?hierFmt(vPrev,row):'—')+'</td>';
+      html += '<td class="hier-cur">'+(vCur!=null?hierFmt(vCur,row):'—')+'</td>';
+      html += '<td class="hier-ytd">'+(vYTD!=null?hierFmt(vYTD,row):'—')+'</td>';
+      // Budget
+      html += '<td class="hier-bud">'+(vBud!=null?hierFmt(vBud,row):'—')+'</td>';
+      // Deviations
       html += '<td class="'+(mom.hasVal?(mom.neg?'neg':'pos'):'na-cell')+'">'+mom.txt+'</td>';
+      html += '<td class="'+(vsYTD.hasVal?(vsYTD.neg?'neg':'pos'):'na-cell')+'">'+vsYTD.txt+'</td>';
       html += '<td class="'+(vsb.hasVal?(vsb.neg?'neg':'pos'):'na-cell')+'">'+vsb.txt+'</td>';
       html += '</tr>';
     });
