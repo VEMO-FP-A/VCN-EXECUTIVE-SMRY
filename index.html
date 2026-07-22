@@ -569,7 +569,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-21 22:40</div>
+  <div>build 2026-07-21 22:52</div>
 </footer>
 
 <script>
@@ -1741,15 +1741,18 @@ function renderHierTable(targetId, hierDef, opts){
   const PREV  = CUR_M > 0 ? CUR_M - 1 : null;
   const curLbl = mlblShort(CUR_M);
 
-  // Find first month with any non-null, non-zero value across all rows
+  // Find firstDataIdx: first month where ≥40% of bold (total) rows have data.
+  // Using only bold rows + threshold prevents one outlier metric (e.g. revenue
+  // starting Jan-25) from pulling the whole table start back prematurely.
+  const _boldRows = [];
+  hierDef.forEach(sec => sec.rows.forEach(row => { if(row.bold && row.k) _boldRows.push(row); }));
+  const _thresh = Math.max(2, Math.ceil(_boldRows.length * 0.4));
   let firstDataIdx = CUR_M;
-  hierDef.forEach(sec => sec.rows.forEach(row => {
-    if(!row.k) return;
-    const arr = D[row.k] || [];
-    for(let i=0; i<=CUR_M; i++){
-      if(arr[i]!=null && arr[i]!==0){ firstDataIdx = Math.min(firstDataIdx, i); break; }
-    }
-  }));
+  for(let i=0; i<=CUR_M; i++){
+    let cnt=0;
+    _boldRows.forEach(r=>{ const v=(D[r.k]||[])[i]; if(v!=null && v!==0) cnt++; });
+    if(cnt >= _thresh){ firstDataIdx=i; break; }
+  }
 
   const nMonths = CUR_M - firstDataIdx + 1;
   const actCols = nMonths + (showYTD ? 1 : 0);
