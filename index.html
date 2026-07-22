@@ -569,7 +569,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-21 22:17</div>
+  <div>build 2026-07-21 22:31</div>
 </footer>
 
 <script>
@@ -1733,32 +1733,48 @@ function hierYTDAvg(row){
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
 }
 
-function renderHierTable(targetId, hierDef){
+function renderHierTable(targetId, hierDef, opts){
+  opts = opts || {};
+  const showYTD = !!opts.showYTD;
   const tgt = document.getElementById(targetId); if(!tgt) return;
   const CUR_M = OPS_CUR;
   const PREV  = CUR_M > 0 ? CUR_M - 1 : null;
-  const curLbl  = mlblShort(CUR_M);
-  const prevLbl = PREV!=null ? mlblShort(PREV) : '—';
+  const curLbl = mlblShort(CUR_M);
 
-  // Two-row grouped header: Actuals | Budget | Deviation vs. CUR_M (%)
+  // Find first month with any non-null, non-zero value across all rows
+  let firstDataIdx = CUR_M;
+  hierDef.forEach(sec => sec.rows.forEach(row => {
+    if(!row.k) return;
+    const arr = D[row.k] || [];
+    for(let i=0; i<=CUR_M; i++){
+      if(arr[i]!=null && arr[i]!==0){ firstDataIdx = Math.min(firstDataIdx, i); break; }
+    }
+  }));
+
+  const nMonths = CUR_M - firstDataIdx + 1;
+  const actCols = nMonths + (showYTD ? 1 : 0);
+  const devCols = showYTD ? 3 : 2;
+
+  // Two-row grouped header
   let html = '<div class="hier-tbl-wrap"><table class="hier-tbl"><thead>';
   // Row 1 — group labels
   html += '<tr class="hier-grp-row">';
   html += '<th rowspan="2" style="text-align:left;vertical-align:bottom;background:var(--forest)">Section</th>';
   html += '<th rowspan="2" style="text-align:left;vertical-align:bottom;background:var(--forest)">Concept</th>';
   html += '<th rowspan="2" style="vertical-align:bottom;background:var(--forest)">Units</th>';
-  html += '<th colspan="3" class="hier-grp-act">Actuals</th>';
+  html += '<th colspan="'+actCols+'" class="hier-grp-act">Actuals</th>';
   html += '<th colspan="1" class="hier-grp-bud">Budget</th>';
-  html += '<th colspan="3" class="hier-grp-dev">Deviation vs. '+curLbl+' (%)</th>';
+  html += '<th colspan="'+devCols+'" class="hier-grp-dev">Deviation vs. '+curLbl+' (%)</th>';
   html += '</tr>';
   // Row 2 — sub-headers
   html += '<tr class="hier-sub-row">';
-  html += '<th class="sub-act">'+prevLbl+'</th>';
-  html += '<th class="sub-act" style="font-weight:800">'+curLbl+'</th>';
-  html += '<th class="sub-act">YTD Avg.</th>';
+  for(let i=firstDataIdx; i<=CUR_M; i++){
+    html += '<th class="sub-act"'+(i===CUR_M?' style="font-weight:800"':'')+'>'+mlblShort(i)+'</th>';
+  }
+  if(showYTD) html += '<th class="sub-act">YTD Avg.</th>';
   html += '<th class="sub-bud">Budget '+curLbl+'</th>';
   html += '<th class="sub-dev">MoM</th>';
-  html += '<th class="sub-dev">Vs. YTD Avg</th>';
+  if(showYTD) html += '<th class="sub-dev">Vs. YTD Avg</th>';
   html += '<th class="sub-dev">Vs. Budget</th>';
   html += '</tr>';
   html += '</thead><tbody>';
@@ -1768,10 +1784,10 @@ function renderHierTable(targetId, hierDef){
     section.rows.forEach((row, ri)=>{
       const vPrev = PREV!=null ? hierVal(row, PREV) : null;
       const vCur  = hierVal(row, CUR_M);
-      const vYTD  = hierYTDAvg(row);
+      const vYTD  = showYTD ? hierYTDAvg(row) : null;
       const vBud  = hierBudVal(row, CUR_M);
       const mom   = hierDev(vCur, vPrev, row);
-      const vsYTD = hierDev(vCur, vYTD,  row);
+      const vsYTD = showYTD ? hierDev(vCur, vYTD, row) : null;
       const vsb   = hierDev(vCur, vBud,  row);
 
       html += '<tr class="'+(row.bold?'hier-bold':'hier-sub')+'">';
@@ -1781,15 +1797,18 @@ function renderHierTable(targetId, hierDef){
       const conCls = 'hier-con'+(row.bold?'':' hier-indent');
       html += '<td class="'+conCls+'">'+row.l.replace(/\\n/g,'<br>')+'</td>';
       html += '<td class="hier-unit">'+row.unit+'</td>';
-      // Actuals
-      html += '<td>'+(vPrev!=null?hierFmt(vPrev,row):'—')+'</td>';
-      html += '<td class="hier-cur">'+(vCur!=null?hierFmt(vCur,row):'—')+'</td>';
-      html += '<td class="hier-ytd">'+(vYTD!=null?hierFmt(vYTD,row):'—')+'</td>';
+      // All month columns
+      for(let i=firstDataIdx; i<=CUR_M; i++){
+        const v = hierVal(row, i);
+        html += '<td'+(i===CUR_M?' class="hier-cur"':'')+'>'+
+          (v!=null ? hierFmt(v,row) : '—')+'</td>';
+      }
+      if(showYTD) html += '<td class="hier-ytd">'+(vYTD!=null?hierFmt(vYTD,row):'—')+'</td>';
       // Budget
       html += '<td class="hier-bud">'+(vBud!=null?hierFmt(vBud,row):'—')+'</td>';
       // Deviations
       html += '<td class="'+(mom.hasVal?(mom.neg?'neg':'pos'):'na-cell')+'">'+mom.txt+'</td>';
-      html += '<td class="'+(vsYTD.hasVal?(vsYTD.neg?'neg':'pos'):'na-cell')+'">'+vsYTD.txt+'</td>';
+      if(showYTD && vsYTD) html += '<td class="'+(vsYTD.hasVal?(vsYTD.neg?'neg':'pos'):'na-cell')+'">'+vsYTD.txt+'</td>';
       html += '<td class="'+(vsb.hasVal?(vsb.neg?'neg':'pos'):'na-cell')+'">'+vsb.txt+'</td>';
       html += '</tr>';
     });
@@ -2106,18 +2125,18 @@ function renderAllRatios(){
       '</div>');
     renderRatioExpandable(targetId, list, '');
   }
-  // Hierarchical sections — chart + hierarchical table (no toggle: table always shows all months)
-  function renderHierPair(targetId, hierDef, charts, sectionTitle){
+  // Hierarchical sections — chart + hierarchical table (no toggle: always all months)
+  function renderHierPair(targetId, hierDef, charts, sectionTitle, opts){
     const tgt=document.getElementById(targetId); if(!tgt) return;
     tgt.innerHTML='';
     tgt.insertAdjacentHTML('beforeend','<div class="vemo-section-title">'+sectionTitle+'</div>');
     renderRatioCharts(targetId, charts);
-    renderHierTable(targetId, hierDef);
+    renderHierTable(targetId, hierDef, opts);
   }
 
   renderPair('rat-main', RATIOS.main, RATIO_CHARTS.main, 'VCN – <b>Main KPIs</b>');
-  renderHierPair('rat-net-kpi',  NET_KPI_HIER,  RATIO_CHARTS.net_kpi,  'VCN – <b>Main Network Metrics</b>');
-  renderHierPair('rat-perf-kpi', PERF_KPI_HIER, RATIO_CHARTS.perf_kpi, 'VCN – <b>Main Performance Metrics</b>');
+  renderHierPair('rat-net-kpi',  NET_KPI_HIER,  RATIO_CHARTS.net_kpi,  'VCN – <b>Main Network Metrics</b>',     {showYTD: false});
+  renderHierPair('rat-perf-kpi', PERF_KPI_HIER, RATIO_CHARTS.perf_kpi, 'VCN – <b>Main Performance Metrics</b>', {showYTD: true});
 
   renderIncidentsBlock();
 }
