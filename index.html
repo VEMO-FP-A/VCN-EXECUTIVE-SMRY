@@ -587,7 +587,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-27 11:42</div>
+  <div>build 2026-07-27 16:53</div>
 </footer>
 
 <script>
@@ -2601,18 +2601,20 @@ function renderEbitdaBridge(){
 
   // Bridge components — positive = favorable vs budget
   // Costs stored as negative → less-negative = better → delta positive = favorable (no negation needed)
-  const dRev      = (sA('revenue')            - sB('revenue'));            // positive = more revenue
-  const dCogsOpex = (sA('cogs_plus_opex')     - sB('cogs_plus_opex'));     // positive = less cost vs budget
-  const dSGA      = (sA('corporate_expenses') - sB('corporate_expenses'));  // positive = less SG&A cost
+  const dRev  = (sA('revenue')            - sB('revenue'));            // positive = more revenue
+  const dCogs = (sA('cogs_total')         - sB('cogs_total'));         // positive = less COGS vs budget
+  const dOpex = (sA('opex')              - sB('opex'));               // positive = less OPEX vs budget
+  const dSGA  = (sA('corporate_expenses') - sB('corporate_expenses'));  // positive = less SG&A cost
   // Residual: anything not captured above (D&A timing, etc.)
-  const dOther = (actE - budE) - (dRev + dCogsOpex + dSGA);
+  const dOther = (actE - budE) - (dRev + dCogs + dOpex + dSGA);
 
   // Build steps array
   const steps = [
-    {l:'Budget\nEBITDA',  val:budE,      type:'anchor'},
-    {l:'ΔRevenue',         val:dRev,      type:'delta'},
-    {l:'ΔCOGS + OPEX',     val:dCogsOpex, type:'delta'},
-    {l:'ΔSG&A',            val:dSGA,      type:'delta'},
+    {l:'Budget\nEBITDA',  val:budE,  type:'anchor'},
+    {l:'ΔRevenue',         val:dRev,  type:'delta'},
+    {l:'ΔCOGS',            val:dCogs, type:'delta'},
+    {l:'ΔOPEX',            val:dOpex, type:'delta'},
+    {l:'ΔSG&A',            val:dSGA,  type:'delta'},
   ];
   if(Math.abs(dOther) > 50000) steps.push({l:'ΔOther', val:dOther, type:'delta'});
   steps.push({l:'Actual\nEBITDA', val:actE, type:'anchor'});
