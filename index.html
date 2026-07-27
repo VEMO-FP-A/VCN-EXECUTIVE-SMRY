@@ -101,8 +101,8 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 /* Background completo: blanco para que las barras de grupo se vean "flotando" */
 .vemo-tbl{background:#fff}
 /* Grupo headers (Actuals, Budget, Deviation $, Deviation %): bright teal bars con white separator entre grupos */
-.vemo-tbl thead.grp th{background:#11ABAB !important;color:#fff !important;font-weight:600;font-size:13px;text-align:center;letter-spacing:0.02em;padding:11px 10px;border:none;text-transform:none;font-style:normal;border-right:6px solid #fff !important;border-top:0;border-bottom:4px solid #fff !important;border-radius:0}
-.vemo-tbl thead.grp th:last-child{border-right:6px solid #fff}
+.vemo-tbl thead.grp th{background:#11ABAB !important;color:#fff !important;font-weight:600;font-size:13px;text-align:center;letter-spacing:0.02em;padding:11px 10px;border:none;text-transform:none;font-style:normal;border-right:4px solid #fff !important;border-top:0;border-bottom:4px solid #fff !important;border-radius:0}
+.vemo-tbl thead.grp th:last-child{border-right:4px solid #fff}
 .vemo-tbl thead.grp th.firstcol{background:transparent;color:transparent;border:none}
 /* Sub-headers (Apr-25 Mar-26 Apr-26 YTD, Budget cols, YoY MoM, etc.): bright teal */
 .vemo-tbl thead.sub th{background:#11ABAB !important;color:#fff !important;font-weight:700;font-size:11px;padding:11px 8px;border-right:2px solid #fff !important;border-top:0;text-align:center;line-height:1.2;letter-spacing:0.02em;text-transform:none}
@@ -135,6 +135,8 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 .vemo-tbl tbody tr.subtot td.neg{color:#FFB3A7}
 .vemo-tbl tbody tr.subtot td.pos{color:#B3F3ED}
 .vemo-tbl tbody tr.sep td{height:8px;background:#fff;border:none;padding:0}
+/* Group-end divider: borde derecho uniforme 4px para alinear grupos de arriba a abajo */
+.vemo-tbl .gend{border-right:4px solid #fff !important}
 .vemo-tbl tbody tr.exp td.lbl{cursor:pointer}
 .vemo-tbl tbody tr.exp td.lbl::before{content:'▶';display:inline-block;margin-right:7px;font-size:8px;color:rgba(255,255,255,0.85);transition:transform 0.18s}
 .vemo-tbl tbody tr.exp.open td.lbl::before{transform:rotate(90deg)}
@@ -585,7 +587,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-27 10:35</div>
+  <div>build 2026-07-27 10:41</div>
 </footer>
 
 <script>
@@ -1310,8 +1312,8 @@ function rowMm(key,label,opts){
   if(opts.parent) trAttr += 'data-parent="'+opts.parent+'" ';
   if(opts.id)     trAttr += 'data-id="'+opts.id+'" ';
   // Helper: cdev/cpct con flag cur para applicar background mint a las celdas highlighted
-  function cdevCur(v){ if(v==null||isNaN(v)) return '<td class="cur">—</td>'; const nv=opts.invert?-v:v; const cls=nv<0?'neg':(nv>0?'pos':''); return '<td class="cur '+cls+'">'+fmtMm(v)+'</td>'; }
-  function cpctCur(v,ref){ if(!ref||isNaN(ref)) return '<td class="cur">n.m.</td>'; const p=v/Math.abs(ref)*100; const nv=opts.invert?-p:p; const cls=nv<0?'neg':(nv>0?'pos':''); return '<td class="cur '+cls+'">'+fmtPct(p,1)+'</td>'; }
+  function cdevCur(v,xc){ xc=xc?' '+xc:''; if(v==null||isNaN(v)) return '<td class="cur'+xc+'">—</td>'; const nv=opts.invert?-v:v; const cls=nv<0?'neg':(nv>0?'pos':''); return '<td class="cur '+cls+xc+'">'+fmtMm(v)+'</td>'; }
+  function cpctCur(v,ref,xc){ xc=xc?' '+xc:''; if(!ref||isNaN(ref)) return '<td class="cur'+xc+'">n.m.</td>'; const p=v/Math.abs(ref)*100; const nv=opts.invert?-p:p; const cls=nv<0?'neg':(nv>0?'pos':''); return '<td class="cur '+cls+xc+'">'+fmtPct(p,1)+'</td>'; }
   let histCells = '';
   if(PL_SHOW_HISTORIC){
     if(PL_PERIOD_MODE === 'quarterly'){
@@ -1341,11 +1343,11 @@ function rowMm(key,label,opts){
     '<td>'+fmtMm(a_yoy)+'</td>'+
     '<td>'+fmtMm(a_prev)+'</td>'+
     '<td class="cur">'+fmtMm(a_cur)+'</td>'+
-    '<td class="cur">'+fmtMm(a_ytd)+'</td>'+
+    '<td class="cur gend">'+fmtMm(a_ytd)+'</td>'+
     '<td class="cur">'+(hasBudget ? fmtMm(b_cur) : '—')+'</td>'+
-    '<td class="cur">'+(hasBudget ? fmtMm(b_ytd) : '—')+'</td>'+
-    cdev(d_yoy)+cdev(d_mom)+cdevCur(d_bud)+cdevCur(d_bud_ytd)+
-    cpct(d_yoy,a_yoy)+cpct(d_mom,a_prev)+cpctCur(d_bud,b_cur)+cpctCur(d_bud_ytd,b_ytd)+
+    '<td class="cur gend">'+(hasBudget ? fmtMm(b_ytd) : '—')+'</td>'+
+    cdev(d_yoy)+cdev(d_mom)+cdevCur(d_bud)+cdevCur(d_bud_ytd,'gend')+
+    cpct(d_yoy,a_yoy)+cpct(d_mom,a_prev)+cpctCur(d_bud,b_cur)+cpctCur(d_bud_ytd,b_ytd,'gend')+
   '</tr>';
 }
 
@@ -1397,16 +1399,16 @@ function rowMargin(label,nKey,dKey){
     '<td class="italic">'+fmtPct(m_yoy,1)+'</td>'+
     '<td class="italic">'+fmtPct(m_prev,1)+'</td>'+
     '<td class="italic cur">'+fmtPct(m_cur,1)+'</td>'+
-    '<td class="italic cur">'+fmtPct(m_ytd,1)+'</td>'+
+    '<td class="italic cur gend">'+fmtPct(m_ytd,1)+'</td>'+
     '<td class="italic cur">'+fmtPct(mb_cur,1)+'</td>'+
-    '<td class="italic cur">'+fmtPct(mb_ytd,1)+'</td>'+
-    '<td colspan="2"></td><td class="cur"></td><td class="cur"></td>'+
+    '<td class="italic cur gend">'+fmtPct(mb_ytd,1)+'</td>'+
+    '<td colspan="2"></td><td class="cur"></td><td class="cur gend"></td>'+
     '<td colspan="2"></td><td class="cur"></td><td class="cur"></td></tr>';
 }
 
 function plHeaderRows(title){
-  const grpStyle = 'background:#11ABAB;color:#fff;font-weight:600;font-size:13px;text-align:center;padding:11px 10px;border-right:6px solid #fff;border-bottom:4px solid #fff;letter-spacing:0.02em';
-  const grpHistStyle = 'background:#168888;color:#fff;font-weight:600;font-size:13px;text-align:center;padding:11px 10px;border-right:6px solid #fff;border-bottom:4px solid #fff;letter-spacing:0.02em';
+  const grpStyle = 'background:#11ABAB;color:#fff;font-weight:600;font-size:13px;text-align:center;padding:11px 10px;border-right:4px solid #fff;border-bottom:4px solid #fff;letter-spacing:0.02em';
+  const grpHistStyle = 'background:#168888;color:#fff;font-weight:600;font-size:13px;text-align:center;padding:11px 10px;border-right:4px solid #fff;border-bottom:4px solid #fff;letter-spacing:0.02em';
   const subStyle = 'background:#11ABAB;color:#fff;font-weight:700;font-size:11px;padding:11px 8px;border-right:2px solid #fff;text-align:center;line-height:1.2;letter-spacing:0.02em';
   const subHistStyle = 'background:#168888;color:#fff;font-weight:600;font-size:10.5px;padding:9px 6px;border-right:1px solid rgba(255,255,255,0.20);text-align:center;line-height:1.2';
   const curStyle = 'background:#7BDADA;color:#fff;font-weight:700;font-size:11px;padding:11px 8px;border-right:2px solid #fff;text-align:center;line-height:1.2;letter-spacing:0.02em';
@@ -1450,11 +1452,11 @@ function plHeaderRows(title){
     '<th style="'+subStyle+'">'+_yoyLbl+'</th>'+
     '<th style="'+subStyle+'">'+_prevLbl+'</th>'+
     '<th class="cur" style="'+curStyle+'">'+_curLbl+'</th>'+
-    '<th class="cur" style="'+curStyle+'">YTD</th>'+
+    '<th class="cur gend" style="'+curStyle+'">YTD</th>'+
     '<th class="cur" style="'+curStyle+'">Budget '+_curLbl+'</th>'+
-    '<th class="cur" style="'+curStyle+'">Budget (YTD)</th>'+
+    '<th class="cur gend" style="'+curStyle+'">Budget (YTD)</th>'+
     '<th style="'+subStyle+'">YoY</th><th style="'+subStyle+'">'+_varLbl+'</th>'+
-    '<th class="cur" style="'+curStyle+'">vs. Budget</th><th class="cur" style="'+curStyle+'">vs. Budget (YTD)</th>'+
+    '<th class="cur" style="'+curStyle+'">vs. Budget</th><th class="cur gend" style="'+curStyle+'">vs. Budget (YTD)</th>'+
     '<th style="'+subStyle+'">YoY</th><th style="'+subStyle+'">'+_varLbl+'</th>'+
     '<th class="cur" style="'+curStyle+'">vs. Budget</th><th class="cur" style="'+curStyle+'">vs. Budget (YTD)</th>'+
   '</tr></thead>';
