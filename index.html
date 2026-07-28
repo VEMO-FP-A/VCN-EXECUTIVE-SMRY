@@ -587,7 +587,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-27 18:33</div>
+  <div>build 2026-07-28 10:59</div>
 </footer>
 
 <script>
@@ -2871,52 +2871,75 @@ function renderVariation(){
 
 function renderHeatmap(fromIdx,toIdx,mode){
   const root=document.getElementById('heatmap-wrap');
-  const lines=[
-    {k:'revenue',          l:'Revenue'},
-    {k:'lto_revenue',         l:'LTO Revenue (Watts)'},
-    {k:'b2c_revenue',          l:'B2C Revenue (Watts)'},
-    {k:'dae_hub_revenue',      l:'Dedicated DAE Hubs'},
-    {k:'gross_profit',     l:'Gross Profit'},
-    {k:'opex',             l:'Cost of Revenue'},
-    {k:'energy_costs',     l:'Energy Cost'},
-    {k:'om_costs',         l:'O&M / Maintenance'},
-    {k:'rent_hubs',        l:'Hub Rent'},
-    {k:'marketing',        l:'Marketing'},
-    {k:'corporate_expenses',l:'SG&A'},
-    {k:'ebitda',           l:'EBITDA'},
-    {k:'da',               l:'D&A'},
-    {k:'ebit',             l:'EBIT'},
-    {k:'interest_expense', l:'Interest Expense'},
-    {k:'net_income',       l:'Net Income'},
-    {k:'total_connectors', l:'Connectors Installed'},
-    {k:'sessions_total',   l:'Charging Sessions'},
-    {k:'utilization',      l:'Network Utilization'},
-    {k:'uptime_pct',       l:'Uptime'},
-    {k:'rev_per_kwh',      l:'Revenue / kWh'},
-  ];
-  let header='<th></th>';
-  for(let i=fromIdx;i<=toIdx;i++) header+='<th>'+mlblShort(i)+'</th>';
-  let body='';
-  lines.forEach(ln=>{
-    const a=arr(ln.k); if(!a.length) return;
-    let row='<td class="lbl">'+ln.l+'</td>';
-    for(let i=fromIdx;i<=toIdx;i++){
-      let pct=null;
-      if(mode==='mom'){ const prev=+a[i-1]||0, cur=+a[i]||0; if(prev) pct=(cur-prev)/Math.abs(prev)*100; }
-      else if(mode==='yoy'){ const yoy=+a[i-12]||0, cur=+a[i]||0; if(yoy) pct=(cur-yoy)/Math.abs(yoy)*100; }
-      else if(mode==='bud'){ const b=barr(ln.k); const bv=+b[i]||0, cur=+a[i]||0; if(bv) pct=(cur-bv)/Math.abs(bv)*100; }
-      else { const yY=(D.months[i]||'').split('-')[0]; let yS=0; for(let j=0;j<D.months.length;j++){ if(D.months[j]&&D.months[j].startsWith(yY+'-01')){ yS=j; break; } } const curYtd=sum(a,yS,i), prevYtd=sum(a,yS-12,i-12); if(prevYtd) pct=(curYtd-prevYtd)/Math.abs(prevYtd)*100; }
-      const txt=pct==null?'—':(pct>=0?'+':'')+pct.toFixed(0)+'%';
-      let bg='#f0f0f0',color='#666';
-      if(pct!=null){ const intensity=Math.min(1,Math.abs(pct)/50); if(pct>=0){ bg='rgba(17,171,171,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#1F5454'; } else { bg='rgba(192,57,43,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#5a1a13'; } }
-      row+='<td style="background:'+bg+';color:'+color+'">'+txt+'</td>';
-    }
-    body+='<tr>'+row+'</tr>';
-  });
   const modeLbl=mode==='mom'?'MoM %':(mode==='yoy'?'YoY %':(mode==='bud'?'vs Budget %':'YTD vs YTD %'));
-  root.innerHTML='<div class="heatmap-hd">Heatmap '+modeLbl+'</div>'+
-    '<div class="heatmap-sub">'+mlblShort(fromIdx)+' → '+mlblShort(toIdx)+'</div>'+
-    '<table class="heatmap"><thead><tr>'+header+'</tr></thead><tbody>'+body+'</tbody></table>';
+  const dateRange=mlblShort(fromIdx)+' → '+mlblShort(toIdx);
+
+  // P&L lines — Managerial view (plViewKey applied for EBITDA/EBIT/NI)
+  const plLines=[
+    {k:'revenue',            l:'Revenue',          invert:false},
+    {k:'cogs_total',         l:'COGS',             invert:true},
+    {k:'opex',               l:'OPEX',             invert:true},
+    {k:'cogs_plus_opex',     l:'COGS + OPEX',      invert:true},
+    {k:'gross_profit',       l:'Gross Profit',     invert:false},
+    {k:'corporate_expenses', l:'SG&A',             invert:true},
+    {k:'ebitda',             l:'EBITDA',           invert:false},
+    {k:'da',                 l:'D&A',              invert:true},
+    {k:'ebit',               l:'EBIT',             invert:false},
+    {k:'interest_expense',   l:'Interest Expense', invert:true},
+    {k:'net_income',         l:'Net Income',       invert:false},
+  ];
+
+  // Metrics — same KPIs as Executive Summary
+  const metricLines=[
+    {k:'installed_capacity_mw',    l:'Installed Capacity (MW)'},
+    {k:'total_connectors',         l:'Active Connectors'},
+    {k:'sessions_total',           l:'Throughput (MWh)'},
+    {k:'utilization',              l:'Network Utilization'},
+    {k:'throughput_per_connector', l:'Throughput / Connector / Day'},
+    {k:'rev_per_kwh',              l:'Avg. Revenue / kWh'},
+    {k:'gross_margin_kwh',         l:'Gross Margin / kWh'},
+    {k:'uptime_pct',               l:'Technical Uptime'},
+  ];
+
+  function buildTable(lines, useViewKey){
+    let header='<th></th>';
+    for(let i=fromIdx;i<=toIdx;i++) header+='<th>'+mlblShort(i)+'</th>';
+    let body='';
+    lines.forEach(ln=>{
+      const rawKey = useViewKey ? plViewKey(ln.k) : ln.k;
+      const a=arr(rawKey); if(!a.length) return;
+      let row='<td class="lbl">'+ln.l+'</td>';
+      for(let i=fromIdx;i<=toIdx;i++){
+        let pct=null;
+        if(mode==='mom'){ const prev=+a[i-1]||0, cur=+a[i]||0; if(prev) pct=(cur-prev)/Math.abs(prev)*100; }
+        else if(mode==='yoy'){ const yoy=+a[i-12]||0, cur=+a[i]||0; if(yoy) pct=(cur-yoy)/Math.abs(yoy)*100; }
+        else if(mode==='bud'){ const b=barr(ln.k); const bv=+b[i]||0, cur=+a[i]||0; if(bv) pct=(cur-bv)/Math.abs(bv)*100; }
+        else { const yY=(D.months[i]||'').split('-')[0]; let yS=0; for(let j=0;j<D.months.length;j++){ if(D.months[j]&&D.months[j].startsWith(yY+'-01')){ yS=j; break; } } const curYtd=sum(a,yS,i), prevYtd=sum(a,yS-12,i-12); if(prevYtd) pct=(curYtd-prevYtd)/Math.abs(prevYtd)*100; }
+        let txt, bg='#f0f0f0', color='#666';
+        if(pct==null){ txt='—'; }
+        else if(Math.abs(pct)>300){ txt='n.m.'; }
+        else {
+          txt=(pct>=0?'+':'')+pct.toFixed(0)+'%';
+          const favorable = ln.invert ? (pct<=0) : (pct>=0);
+          const intensity=Math.min(1,Math.abs(pct)/50);
+          if(favorable){ bg='rgba(17,171,171,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#1F5454'; }
+          else { bg='rgba(192,57,43,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#5a1a13'; }
+        }
+        row+='<td style="background:'+bg+';color:'+color+'">'+txt+'</td>';
+      }
+      body+='<tr>'+row+'</tr>';
+    });
+    return '<table class="heatmap"><thead><tr>'+header+'</tr></thead><tbody>'+body+'</tbody></table>';
+  }
+
+  root.innerHTML=
+    '<div class="heatmap-hd">P&L — Managerial · '+modeLbl+'</div>'+
+    '<div class="heatmap-sub">'+dateRange+'</div>'+
+    buildTable(plLines, true)+
+    '<div style="height:20px"></div>'+
+    '<div class="heatmap-hd">Metrics · '+modeLbl+'</div>'+
+    '<div class="heatmap-sub">'+dateRange+'</div>'+
+    buildTable(metricLines, false);
 }
 
 function renderVariationTable(fromIdx,toIdx,mode){
@@ -2934,11 +2957,11 @@ function renderVariationTable(fromIdx,toIdx,mode){
     let yS=0; for(let j=0;j<D.months.length;j++){ if(D.months[j]&&D.months[j].startsWith(yY+'-01')){ yS=j; break; } }
     return [sum(a,yS,idx),sum(a,yS-12,idx-12)];
   }
-  let header='<th class="firstcol" style="text-align:left">Linea</th>';
+  let header='<th class="firstcol" style="text-align:left">Line</th>';
   for(let i=fromIdx;i<=toIdx;i++) header+='<th>'+mlblShort(i)+'</th>';
   let body='';
   lines.forEach(ln=>{
-    const a=arr(ln.k); if(!a.length) return;
+    const a=arr(plViewKey(ln.k)); if(!a.length) return;
     let row='<td class="lbl">'+ln.l+'</td>';
     for(let i=fromIdx;i<=toIdx;i++){
       const r=variation(a,i,ln.k); const cur=r[0], ref=r[1];
@@ -2951,7 +2974,7 @@ function renderVariationTable(fromIdx,toIdx,mode){
     }
     body+='<tr>'+row+'</tr>';
   });
-  tgt.innerHTML='<div class="vemo-section-title" style="font-size:18px">Variation table — '+(mode==='mom'?'MoM':(mode==='yoy'?'YoY':'YTD'))+'</div>'+
+  tgt.innerHTML='<div class="vemo-section-title" style="font-size:18px">Variation Table — Managerial · '+(mode==='mom'?'MoM':(mode==='yoy'?'YoY':(mode==='bud'?'vs Budget':'YTD')))+'</div>'+
     '<div class="tbl-scroll"><table class="vemo-tbl"><thead><tr class="sub">'+header+'</tr></thead><tbody>'+body+'</tbody></table></div>';
 }
 
@@ -3350,7 +3373,7 @@ function chatBotAnswer(q){
     const hour = new Date().getHours();
     const greet = hour<12?'Good morning':(hour<18?'Good afternoon':'Good evening');
     return _banner(greet+' 👋')+
-      '<div class="ri"><div>Soy <b>VEMIA</b>, tu co-piloto de IA para el dashboard de VCN. ¿Qué números analizamos hoy?</div></div>'+
+      '<div class="ri"><div>I\'m <b>VEMIA</b>, your AI co-pilot for the VCN dashboard. What numbers are we analyzing today?</div></div>'+
       '<div class="ri"><div>Try: <b>"executive summary"</b>, <b>"main increases this period"</b>, <b>"what should I worry about"</b>, or <b>"about VEMO"</b>.</div></div>';
   }
 
@@ -3504,10 +3527,10 @@ function chatBotAnswer(q){
     let out = '👋 Hola David — sí, lo estás haciendo bien manteniendo el dashboard al día.\n\n';
     out += '<b>Pulso VCN ' + mlblShort(CUR) + ':</b>\n';
     if(rev > revB) out += '✅ Revenue arriba de Budget (' + fmtMm(rev) + 'M vs ' + fmtMm(revB) + 'M)\n';
-    else if(revB) out += '⚠️ Revenue abajo de Budget — necesita atención del team\n';
-    if(eb > ebB) out += '✅ EBITDA arriba de Budget\n';
-    else if(ebB) out += '⚠️ EBITDA abajo de Budget — Matias y Carlos deberían tener visibilidad\n';
-    out += '\n💡 Tip: pregúntame "what should I worry about" para detalle ejecutivo.';
+    else if(revB) out += '⚠️ Revenue below Budget — needs team attention\n';
+    if(eb > ebB) out += '✅ EBITDA above Budget\n';
+    else if(ebB) out += '⚠️ EBITDA below Budget — Matias and Carlos should have visibility\n';
+    out += '\n💡 Tip: ask me "what should I worry about" for executive detail.';
     return out;
   }
   if(/(matias|galuccio|carlos|diez|lider.+dae|quien.+(lid|dirig|maneja).+dae|leadership.+dae|team.+dae)/i.test(lq)){
@@ -4707,17 +4730,17 @@ function chatBotAnswer(q){
   // === GREETINGS / SMALL TALK ===
   if(/^(hi|hello|hey|hola|que tal|qué tal|buenos dias|buenas tardes|buenas noches|saludos)\b/i.test(lq)){
     const saludos = [
-      '👋 ¡Hola David! Soy VEMIA, lista para analizar VCN. ¿Qué quieres ver hoy?',
-      '⚡ ¡Hey! Aquí VEMIA — pregúntame algo de VCN, revenue, ebitda, conectores, o pide un chiste.',
-      '⚡ Hola, ¿cómo va? Pídeme datos, un fun fact, o el "executive summary".'
+      '👋 Hey David! I\'m VEMIA, ready to analyze VCN. What do you want to see today?',
+      '⚡ Hey! VEMIA here — ask me anything about VCN: revenue, EBITDA, connectors, or request a fun fact.',
+      '⚡ Hi! Ask me for data, a fun fact, or the "executive summary".'
     ];
     return _rand(saludos);
   }
   if(/^(gracias|thanks|thank you|ty|thx|merci)\b/i.test(lq)){
-    return '🤗 De nada, David. Estoy para ayudarte con VCN 24/7. ¿Algo más?';
+    return '🤗 You\'re welcome, David. I\'m here for VCN 24/7. Anything else?';
   }
   if(/\b(quien.+eres|quién eres|who are you|que eres|qué eres|preséntate)\b/i.test(lq)){
-    return '🤖 <b>Soy VEMIA</b> — asistente de IA del dashboard VCN.<br><br>• <b>Nacida</b>: 2021 (junto con VEMO)<br>• <b>Misión</b>: Convertir números en decisiones<br>• <b>Especialidad</b>: KPIs financieros y operativos de VCN (VEMO Charging Network)<br>• <b>Idiomas</b>: Español e inglés<br><br>Pídeme: KPIs, análisis ejecutivos, chistes, fun facts, links de VEMO, comparaciones, forecasts. ¡Pruébame!';
+    return '🤖 <b>I\'m VEMIA</b> — AI assistant for the VCN dashboard.<br><br>• <b>Born</b>: 2021 (alongside VEMO)<br>• <b>Mission</b>: Turn numbers into decisions<br>• <b>Specialty</b>: Financial & operational KPIs for VCN (VEMO Charging Network)<br><br>Ask me: KPIs, executive analyses, fun facts, VEMO links, comparisons, forecasts. Try me!';
   }
 
   // === MATH SIMPLE (calculadora rápida) ===
@@ -5048,7 +5071,7 @@ function setupChat(){
     b.addEventListener('click', ()=>doSend(b.dataset.q));
   });
   // welcome
-  appendMsg('⚡ ¡Hola! Soy <b>VEMIA</b> — la IA de VEMO Charging Network. Conozco todo sobre los financieros y KPIs de VCN. Pregúntame sobre revenue, EBITDA, conectores, uptime, sesiones, o pide un análisis ejecutivo. En español o inglés. Tip: usa los botones de abajo para empezar.', 'bot');
+  appendMsg('⚡ Hi! I\'m <b>VEMIA</b> — the AI for VEMO Charging Network. I know everything about VCN financials and KPIs. Ask me about revenue, EBITDA, connectors, uptime, sessions, or request an executive analysis. Tip: use the buttons below to get started.', 'bot');
 }
 
 // ============ COMPARATOR mes-vs-mes ============
@@ -5090,12 +5113,13 @@ function renderComparator(){
   ];
   let rows='';
   lines.forEach(ln=>{
-    const a=arr(ln.k); if(!a.length) return;
+    const a=arr(plViewKey(ln.k)); if(!a.length) return;
     const va=+a[aIdx]||0, vb=+a[bIdx]||0, d=vb-va;
     const isNeg=ln.invert?d>0:d<0;
     const isPos=ln.invert?d<0:d>0;
     const pct=va?(d/Math.abs(va))*100:null;
-    const cell = mode==='abs'? fmtMm(d) : (pct!=null?fmtPct(pct,1):'n.m.');
+    const pctDisplay = pct==null?'n.m.':(Math.abs(pct)>300?'n.m.':fmtPct(pct,1));
+    const cell = mode==='abs'? fmtMm(d) : pctDisplay;
     const cls = isNeg?'neg':(isPos?'pos':'');
     rows += '<tr>'+
       '<td class="lbl">'+ln.l+'</td>'+
@@ -5107,7 +5131,7 @@ function renderComparator(){
   tgt.innerHTML =
     '<div class="tbl-scroll"><table class="vemo-tbl">'+
     '<thead><tr class="sub">'+
-      '<th class="firstcol" style="text-align:left">Línea P&L (MXNm)</th>'+
+      '<th class="firstcol" style="text-align:left">P&L Line — Managerial (MXNm)</th>'+
       '<th>'+mlbl(aIdx)+'</th>'+
       '<th class="cur">'+mlbl(bIdx)+'</th>'+
       '<th>Δ B vs A '+(mode==='pct'?'(%)':'($)')+'</th>'+
