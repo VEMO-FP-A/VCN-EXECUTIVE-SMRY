@@ -587,7 +587,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-07-29 12:48</div>
+  <div>build 2026-07-29 13:00</div>
 </footer>
 
 <script>
@@ -2323,52 +2323,6 @@ const lineDataLabelsPlugin = {
       });
       ctx.restore();
       labelSeriesIdx++;
-    });
-  }
-};
-
-/* ── Custom data-label plugin (no external lib) ───────────────────────────────
-   Draws value text directly above each point for datasets that are:
-     • visible (!meta.hidden)
-     • NOT flagged with dataset.__noLabels = true
-   Secondary series (Budget, Forecast, Margin) must set __noLabels so they
-   don't clutter the chart. The primary (Actuals) series drives the labels.
-   Each dataset may define dataset.__labelFmt = fn(value) → string; if absent,
-   falls back to a compact numeric format.
-   Stagger: each labeled dataset shifts its vertical offset by +10 px so labels
-   from two visible series don't overlap when values are close.
-─────────────────────────────────────────────────────────────────────────────*/
-const lineDataLabelsPlugin = {
-  id: 'lineDataLabels',
-  afterDatasetsDraw(chart) {
-    const ctx = chart.ctx;
-    const defaultFmt = function(v){
-      if(v==null||isNaN(v)) return '';
-      const a=Math.abs(v);
-      if(a>=1e6) return (v/1e6).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
-      if(a>=1e3) return (v/1e3).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'k';
-      return v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
-    };
-    let labelIdx = 0;
-    chart.data.datasets.forEach(function(dataset, di){
-      if(dataset.__noLabels) return;
-      const meta = chart.getDatasetMeta(di);
-      if(!meta || meta.hidden) return;
-      const offset = 6 + labelIdx * 10;
-      const fmt = dataset.__labelFmt || defaultFmt;
-      ctx.save();
-      ctx.fillStyle = dataset.borderColor || '#333';
-      ctx.font = '600 9px "Space Grotesk", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      meta.data.forEach(function(point, pi){
-        const value = dataset.data[pi];
-        if(value==null||isNaN(value)) return;
-        const pos = point.tooltipPosition();
-        ctx.fillText(fmt(value), pos.x, pos.y - offset);
-      });
-      ctx.restore();
-      labelIdx++;
     });
   }
 };
