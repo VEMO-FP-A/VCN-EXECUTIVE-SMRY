@@ -642,7 +642,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-03 18:03</div>
+  <div>build 2026-08-03 18:17</div>
 </footer>
 
 <script>
@@ -1768,40 +1768,40 @@ const PERF_KPI_HIER = [
     {l:'DAE',              k:'thru_conn_dae',            bk:'thru_conn_dae',      unit:'kWh/conn/day', t:'num',agg:'avg',fmt:'n0', better:'up'},
   ]},
   {sec:'Network\nThroughput\nUtilization', rows:[
-    {l:'Total (ex. EMSP)', k:'utilization',   bk:'utilization', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up', bold:true},
-    {l:'Anchored',         k:'util_anchored', bk:'util_anchored', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up'},
-    {l:'Pure Destination', k:'util_pure_dest',bk:'util_pure_dest',unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up'},
-    {l:'RHF Destination',  k:'util_rhf',      bk:'util_rhf', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up'},
-    {l:'DAE',              k:'util_dae',      bk:'util_dae',      unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up'},
+    {l:'Total (ex. EMSP)', k:'utilization',   bk:'utilization', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up', bold:true},
+    {l:'Anchored',         k:'util_anchored', bk:'util_anchored', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up'},
+    {l:'Pure Destination', k:'util_pure_dest',bk:'util_pure_dest',unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up'},
+    {l:'RHF Destination',  k:'util_rhf',      bk:'util_rhf', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up'},
+    {l:'DAE',              k:'util_dae',      bk:'util_dae',      unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up'},
   ]},
   {sec:'Total\nRevenues', rows:[
-    {l:'Total (ex. EMSP)', k:'revenue_ex_dae', bk:'revenue_ex_dae', unit:'MXN$m', t:'num',agg:'sum',fmt:'n0', better:'up', scale:1e-6, bold:true},
-    {l:'Anchored',         k:'rev_anchored',   bk:'rev_anchored',   unit:'MXN$m', t:'num',agg:'sum',fmt:'n0', better:'up', scale:1e-6},
-    {l:'Pure Destination', k:'rev_pure_dest',  bk:'rev_pure_dest',  unit:'MXN$m', t:'num',agg:'sum',fmt:'n0', better:'up', scale:1e-6},
-    {l:'RHF Destination',  k:'rev_rhf',        bk:'rev_rhf',        unit:'MXN$m', t:'num',agg:'sum',fmt:'n0', better:'up', scale:1e-6},
+    {l:'Total (ex. EMSP)', k:'revenue_ex_dae', bk:'revenue_ex_dae', unit:'MXN$m', t:'num',agg:'sum',fmt:'n1', better:'up', scale:1e-6, bold:true},
+    {l:'Anchored',         k:'rev_anchored',   bk:'rev_anchored',   unit:'MXN$m', t:'num',agg:'sum',fmt:'n1', better:'up', scale:1e-6},
+    {l:'Pure Destination', k:'rev_pure_dest',  bk:'rev_pure_dest',  unit:'MXN$m', t:'num',agg:'sum',fmt:'n1', better:'up', scale:1e-6},
+    {l:'RHF Destination',  k:'rev_rhf',        bk:'rev_rhf',        unit:'MXN$m', t:'num',agg:'sum',fmt:'n1', better:'up', scale:1e-6},
   ]},
   {sec:'Avg. Revenue\nper kWh', rows:[
-    {l:'Total (ex. EMSP)', k:'rev_per_kwh',      bk:'rev_per_kwh', unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n0', better:'up', bold:true},
-    {l:'Anchored',         k:'revkwh_anchored',  bk:'revkwh_anchored',  unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n0', better:'up'},
-    {l:'Pure Destination', k:'revkwh_pure_dest', bk:'revkwh_pure_dest', unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n0', better:'up'},
-    {l:'RHF Destination',  k:'revkwh_rhf',       bk:'revkwh_rhf', unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n0', better:'up'},
+    {l:'Total (ex. EMSP)', k:'rev_per_kwh',      bk:'rev_per_kwh', unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n1', better:'up', bold:true},
+    {l:'Anchored',         k:'revkwh_anchored',  bk:'revkwh_anchored',  unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n1', better:'up'},
+    {l:'Pure Destination', k:'revkwh_pure_dest', bk:'revkwh_pure_dest', unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n1', better:'up'},
+    {l:'RHF Destination',  k:'revkwh_rhf',       bk:'revkwh_rhf', unit:'MXN$/kWh', t:'num',agg:'avg',fmt:'n1', better:'up'},
   ]},
   {sec:'Energy Margin\nper kWh', rows:[
-    {l:'Total (ex. EMSP)', k:'energy_margin_kwh', bk:'energy_margin_kwh', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up', bold:true},
+    {l:'Total (ex. EMSP)', k:'energy_margin_kwh', bk:'energy_margin_kwh', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up', bold:true},
   ]},
   {sec:'Gross Profit\nMargin\nper kWh¹', rows:[
-    {l:'Per kWh sold\n(ex. EMSP)', k:'gross_margin_kwh', bk:'gross_margin_kwh', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up', bold:true},
+    {l:'Per kWh sold\n(ex. EMSP)', k:'gross_margin_kwh', bk:'gross_margin_kwh', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up', bold:true},
   ]},
   {sec:'Uptime', rows:[
-    {l:'Total',            k:'uptime_pct',      bk:'uptime_pct', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up', bold:true},
-    {l:'Anchored',         k:'uptime_anchored', bk:'uptime_anchored', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up'},
-    {l:'Pure Destination', k:'uptime_pure_dest',bk:'uptime_pure_dest',unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up'},
-    {l:'RHF Destination',  k:'uptime_rhf',      bk:'uptime_rhf', unit:'%', t:'pct',agg:'avg',fmt:'n0', better:'up'},
+    {l:'Total',            k:'uptime_pct',      bk:'uptime_pct', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up', bold:true},
+    {l:'Anchored',         k:'uptime_anchored', bk:'uptime_anchored', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up'},
+    {l:'Pure Destination', k:'uptime_pure_dest',bk:'uptime_pure_dest',unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up'},
+    {l:'RHF Destination',  k:'uptime_rhf',      bk:'uptime_rhf', unit:'%', t:'pct',agg:'avg',fmt:'n1', better:'up'},
   ]},
   {sec:'EV\nConnector\nRatio', rows:[
-    {l:'LTO',                    k:'evcr_lto',      bk:'evcr_lto',      unit:'#', t:'num',agg:'avg',fmt:'n0', better:'up', bold:true},
-    {l:'LTO + DiDi Independent',           k:'evcr_lto_didi',      bk:'evcr_lto_didi', unit:'#', t:'num',agg:'avg',fmt:'n0', better:'up'},
-    {l:'LTO + DiDi Independent + LAFA',   k:'evcr_lto_didi_lafa', bk:null,             unit:'#', t:'num',agg:'avg',fmt:'n0', better:'up'},
+    {l:'LTO',                          k:'evcr_lto',           bk:'evcr_lto',      unit:'#', t:'num',agg:'avg',fmt:'n1', better:'up', bold:true},
+    {l:'LTO + DiDi Independent',       k:'evcr_lto_didi',      bk:'evcr_lto_didi', unit:'#', t:'num',agg:'avg',fmt:'n1', better:'up'},
+    {l:'LTO + DiDi Independent + LAFA',k:'evcr_lto_didi_lafa', bk:null,             unit:'#', t:'num',agg:'avg',fmt:'n1', better:'up'},
   ]},
 ];
 
