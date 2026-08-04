@@ -638,7 +638,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-04 11:23</div>
+  <div>build 2026-08-04 11:47</div>
 </footer>
 
 <script>
@@ -2878,8 +2878,8 @@ function renderPLCharts(){
   let html='';
   PL_LINES.forEach((ln,i)=>{
     if(!arr(ln.k).some(v=>v!=null&&v!=0)) return;
-    const fy25=sum(arr(ln.k),0,11), ytd26=sum(arr(ln.k),YTD_START,YTD_END);
-    const stat='FY25: '+fmtMm(fy25)+' · YTD: '+fmtMm(ytd26);
+    const ytd25=sum(arr(ln.k),YTD_START-12,YTD_END-12), ytd26=sum(arr(ln.k),YTD_START,YTD_END);
+    const stat='YTD 25: '+fmtMm(ytd25)+' · YTD 26: '+fmtMm(ytd26);
     html+='<div class="chart-card">'+
       '<div class="chart-hd"><span class="t">'+ln.l+'</span><span class="stats">'+stat+'</span>'+
       '<div class="chart-toggles">'+
