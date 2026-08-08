@@ -638,7 +638,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-04 16:47</div>
+  <div>build 2026-08-08 11:01</div>
 </footer>
 
 <script>
@@ -5437,8 +5437,13 @@ function renderMonthlyHL(){
   function bind(){
     const sel = document.getElementById('hl-month');
     if(!sel) return;
-    const months = Object.keys(MONTHLY_HL).filter(k=>!k.startsWith('_'));
-    months.reverse(); // most recent first
+    // Only show months that have real H&L content (highlights or lowlights from JSON, not just auto P&L commentary)
+    const months = Object.keys(MONTHLY_HL).filter(k=>{
+      if(k.startsWith('_')) return false;
+      const d = MONTHLY_HL[k];
+      return d && ((d.highlights && d.highlights.length > 0) || (d.lowlights && d.lowlights.length > 0));
+    });
+    months.sort(); months.reverse(); // most recent first
     sel.innerHTML = months.map(m=>'<option value="'+m+'">'+m+'</option>').join('');
     // Default to most recent month that has actual H&L data (highlights or lowlights populated)
     const hlDefault = months.find(function(m){
