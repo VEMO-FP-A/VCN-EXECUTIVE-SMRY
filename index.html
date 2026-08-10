@@ -638,7 +638,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-08 11:01</div>
+  <div>build 2026-08-10 12:39</div>
 </footer>
 
 <script>
@@ -3020,18 +3020,20 @@ function renderHeatmap(fromIdx,toIdx,mode){
   const dateRange=mlblShort(fromIdx)+' → '+mlblShort(toIdx);
 
   // P&L lines — Managerial view (plViewKey applied for EBITDA/EBIT/NI)
+  // No invert needed: values carry natural P&L sign (costs negative),
+  // so d>0 is always favorable, d<0 always unfavorable.
   const plLines=[
-    {k:'revenue',            l:'Revenue',          invert:false},
-    {k:'cogs_total',         l:'COGS',             invert:true},
-    {k:'opex',               l:'OPEX',             invert:true},
-    {k:'cogs_plus_opex',     l:'COGS + OPEX',      invert:true},
-    {k:'gross_profit',       l:'Gross Profit',     invert:false},
-    {k:'corporate_expenses', l:'SG&A',             invert:true},
-    {k:'ebitda',             l:'EBITDA',           invert:false},
-    {k:'da',                 l:'D&A',              invert:true},
-    {k:'ebit',               l:'EBIT',             invert:false},
-    {k:'interest_expense',   l:'Interest Expense', invert:true},
-    {k:'net_income',         l:'Net Income',       invert:false},
+    {k:'revenue',            l:'Revenue'},
+    {k:'cogs_total',         l:'COGS'},
+    {k:'opex',               l:'OPEX'},
+    {k:'cogs_plus_opex',     l:'COGS + OPEX'},
+    {k:'gross_profit',       l:'Gross Profit'},
+    {k:'corporate_expenses', l:'SG&A'},
+    {k:'ebitda',             l:'EBITDA'},
+    {k:'da',                 l:'D&A'},
+    {k:'ebit',               l:'EBIT'},
+    {k:'interest_expense',   l:'Interest Expense'},
+    {k:'net_income',         l:'Net Income'},
   ];
 
   // Metrics — same KPIs as Executive Summary
@@ -3080,7 +3082,7 @@ function renderHeatmap(fromIdx,toIdx,mode){
         if(bpsVal!=null){
           // Basis points for pct-type metrics (utilization, uptime, margins)
           txt=(bpsVal>=0?'+':'-')+Math.abs(Math.round(bpsVal)).toLocaleString()+' bps';
-          const favorable = ln.invert ? (bpsVal<=0) : (bpsVal>=0);
+          const favorable = bpsVal>=0; // d>0 always favorable (natural P&L signs)
           const intensity=Math.min(1,Math.abs(bpsVal)/300); // 300 bps = full color
           if(favorable){ bg='rgba(17,171,171,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#1F5454'; }
           else { bg='rgba(192,57,43,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#5a1a13'; }
@@ -3088,7 +3090,7 @@ function renderHeatmap(fromIdx,toIdx,mode){
         else if(Math.abs(pct)>300){ txt='n.m.'; }
         else {
           txt=(pct>=0?'+':'')+pct.toFixed(0)+'%';
-          const favorable = ln.invert ? (pct<=0) : (pct>=0);
+          const favorable = pct>=0; // d>0 always favorable (natural P&L signs)
           const intensity=Math.min(1,Math.abs(pct)/50);
           if(favorable){ bg='rgba(17,171,171,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#1F5454'; }
           else { bg='rgba(192,57,43,'+(0.1+intensity*0.55)+')'; color=intensity>0.5?'#fff':'#5a1a13'; }
@@ -3113,8 +3115,8 @@ function renderHeatmap(fromIdx,toIdx,mode){
 function renderVariationTable(fromIdx,toIdx,mode){
   const tgt=document.getElementById('var-table');
   const lines=[
-    {k:'revenue',l:'Revenues'},{k:'opex',l:'Opex',invert:true},
-    {k:'gross_profit',l:'Gross Profit'},{k:'corporate_expenses',l:'SG&A',invert:true},
+    {k:'revenue',l:'Revenues'},{k:'opex',l:'Opex'},
+    {k:'gross_profit',l:'Gross Profit'},{k:'corporate_expenses',l:'SG&A'},
     {k:'ebitda',l:'EBITDA'},{k:'ebit',l:'EBIT'},{k:'net_income',l:'Net Income'},
   ];
   function variation(a,idx,lnK){
@@ -3134,11 +3136,12 @@ function renderVariationTable(fromIdx,toIdx,mode){
     for(let i=fromIdx;i<=toIdx;i++){
       const r=variation(a,i,ln.k); const cur=r[0], ref=r[1];
       const d=cur-ref;
-      const isNeg=ln.invert?d>0:d<0;
+      // Universal color rule: d>0 = favorable = green, d<0 = unfavorable = red
+      // Works for all P&L lines because values carry natural sign (costs are negative)
+      const cls = d<0 ? 'neg' : (d>0 ? 'pos' : '');
       const pct=ref?(d/Math.abs(ref))*100:null;
-      // FIX doble parens: usar valor absoluto para % cuando ya va dentro de paren externo
       const pctStr = pct!=null ? (Math.abs(pct).toFixed(0)+'%') : null;
-      row+='<td class="'+(isNeg?'neg':'')+'">'+fmtMm(d)+(pctStr?' <span style="font-size:9.5px;color:var(--tx3)">('+(pct<0?'-':'')+pctStr+')</span>':'')+'</td>';
+      row+='<td class="'+cls+'">'+fmtMm(d)+(pctStr?' <span style="font-size:9.5px;color:var(--tx3)">('+(pct<0?'-':'')+pctStr+')</span>':'')+'</td>';
     }
     body+='<tr>'+row+'</tr>';
   });
@@ -5268,27 +5271,26 @@ function renderComparator(){
   const mode = (document.querySelector('.var-filters .vmode button[data-cmp].active')||{}).dataset?.cmp || 'abs';
   const lines = [
     {k:'revenue',l:'Revenues'},
-    {k:'opex',l:'Opex',invert:true},
+    {k:'opex',l:'Opex'},
     {k:'gross_profit',l:'Gross Profit'},
-    {k:'corporate_expenses',l:'SG&A',invert:true},
+    {k:'corporate_expenses',l:'SG&A'},
     {k:'ebitda',l:'EBITDA'},
-    {k:'da',l:'D&A',invert:true},
+    {k:'da',l:'D&A'},
     {k:'ebit',l:'EBIT'},
-    {k:'interest_expense',l:'Interest Expense',invert:true},
+    {k:'interest_expense',l:'Interest Expense'},
     {k:'ebt',l:'EBT'},
-    {k:'taxes',l:'Taxes',invert:true},
+    {k:'taxes',l:'Taxes'},
     {k:'net_income',l:'Net Income'},
   ];
   let rows='';
   lines.forEach(ln=>{
     const a=arr(plViewKey(ln.k)); if(!a.length) return;
     const va=+a[aIdx]||0, vb=+a[bIdx]||0, d=vb-va;
-    const isNeg=ln.invert?d>0:d<0;
-    const isPos=ln.invert?d<0:d>0;
+    // Universal rule: d>0 favorable (costs carry natural negative sign)
+    const cls = d<0 ? 'neg' : (d>0 ? 'pos' : '');
     const pct=va?(d/Math.abs(va))*100:null;
     const pctDisplay = pct==null?'n.m.':(Math.abs(pct)>300?'n.m.':fmtPct(pct,1));
     const cell = mode==='abs'? fmtMm(d) : pctDisplay;
-    const cls = isNeg?'neg':(isPos?'pos':'');
     rows += '<tr>'+
       '<td class="lbl">'+ln.l+'</td>'+
       '<td>'+fmtMm(va)+'</td>'+
