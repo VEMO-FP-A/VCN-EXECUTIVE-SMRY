@@ -638,7 +638,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-10 12:39</div>
+  <div>build 2026-08-10 13:39</div>
 </footer>
 
 <script>
@@ -3136,16 +3136,17 @@ function renderVariationTable(fromIdx,toIdx,mode){
     for(let i=fromIdx;i<=toIdx;i++){
       const r=variation(a,i,ln.k); const cur=r[0], ref=r[1];
       const d=cur-ref;
-      // Universal color rule: d>0 = favorable = green, d<0 = unfavorable = red
-      // Works for all P&L lines because values carry natural sign (costs are negative)
       const cls = d<0 ? 'neg' : (d>0 ? 'pos' : '');
-      const pct=ref?(d/Math.abs(ref))*100:null;
-      const pctStr = pct!=null ? (Math.abs(pct).toFixed(0)+'%') : null;
-      row+='<td class="'+cls+'">'+fmtMm(d)+(pctStr?' <span style="font-size:9.5px;color:var(--tx3)">('+(pct<0?'-':'')+pctStr+')</span>':'')+'</td>';
+      const magChange = Math.abs(cur) - Math.abs(ref);
+      const arrow = magChange>0 ? '▲ ' : (magChange<0 ? '▼ ' : '');
+      const pct = ref ? Math.abs(d/Math.abs(ref)*100) : null;
+      const pctStr = pct!=null ? (pct.toFixed(0)+'%') : null;
+      row+='<td class="'+cls+'">'+arrow+fmtMm(Math.abs(d))+(pctStr?' <span style="font-size:9.5px;color:var(--tx3)">('+pctStr+')</span>':'')+'</td>';
     }
     body+='<tr>'+row+'</tr>';
   });
   tgt.innerHTML='<div class="vemo-section-title" style="font-size:18px">Variation Table — Managerial · '+(mode==='mom'?'MoM':(mode==='yoy'?'YoY':(mode==='bud'?'vs Budget':'YTD')))+'</div>'+
+    '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px;padding:4px 0">▲ line up · ▼ line down (in size). Color = business impact: <span style="color:var(--teal)">green = favorable</span> (more revenue or less expense), <span style="color:#c0392b">red = unfavorable</span>. Amounts &amp; % shown as magnitude.</div>'+
     '<div class="tbl-scroll"><table class="vemo-tbl"><thead><tr class="sub">'+header+'</tr></thead><tbody>'+body+'</tbody></table></div>';
 }
 
