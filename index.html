@@ -554,7 +554,10 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
   <div class="rsub active" data-sub="main"><div id="rat-main"></div></div>
   <div class="rsub" data-sub="net-kpi"><div id="rat-net-kpi"></div></div>
   <div class="rsub" data-sub="perf-kpi"><div id="rat-perf-kpi"></div></div>
-  <div class="rsub" data-sub="financial"><div id="pl-charts" class="charts-grid"></div></div>
+  <div class="rsub" data-sub="financial">
+    <div id="pl-charts" class="charts-grid"></div>
+    <div id="pl-financial-table" class="vemo-wrap" style="margin-top:24px"></div>
+  </div>
 
 
 
@@ -623,7 +626,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-24 11:13</div>
+  <div>build 2026-08-24 11:32</div>
 </footer>
 
 <script>
@@ -720,7 +723,10 @@ document.querySelectorAll('#ratios-stabs button').forEach(b=>{
     document.querySelectorAll('[data-s="ratios"] .rsub').forEach(s=>s.classList.remove('active'));
     b.classList.add('active');
     document.querySelector('[data-s="ratios"] .rsub[data-sub="'+b.dataset.sub+'"]').classList.add('active');
-    if(b.dataset.sub==='financial') try{ renderPLCharts(); }catch(e){ console.warn(e); }
+    if(b.dataset.sub==='financial'){
+      try{ renderPLCharts(); }catch(e){ console.warn(e); }
+      try{ renderPLVemo('pl-financial-table',{simple:false,title:'VCN – <b>Financial P&L</b>'}); }catch(e){ console.warn(e); }
+    }
   });
 });
 
@@ -2897,15 +2903,18 @@ function renderPLCharts(){
   const charts={};
   function build(i){
     const ln=PL_LINES[i];
-    // Mostrar TODOS los valores como positivos (magnitud) — costos/gastos/pérdidas en eje positivo
-    const absMap = function(a){ return (a||[]).map(v => v==null ? null : Math.abs(+v||0)); };
+    // Expense lines (costs stored negative) → show as magnitude (positive)
+    // P&L lines (revenue, GP, EBITDA, EBIT, NI) → keep natural sign so losses show below zero
+    const toChart = function(a){ return (a||[]).map(v => v==null ? null : +v||0); };
+    const absMap  = function(a){ return (a||[]).map(v => v==null ? null : Math.abs(+v||0)); };
+    const mapFn = ln.expense ? absMap : toChart;
     const card=root.querySelectorAll('.chart-card')[i];
     const showBud=card.querySelector('[data-toggle="bud"]').checked;
     const showProj=card.querySelector('[data-toggle="proj"]').checked;
     if(charts[i]) charts[i].destroy();
     const viewK = plViewKey(ln.k);
-    let A2 = absMap(arr(viewK).length ? arr(viewK) : arr(ln.k));
-    let B2 = absMap(barr(viewK).length ? barr(viewK) : barr(ln.k));
+    let A2 = mapFn(arr(viewK).length ? arr(viewK) : arr(ln.k));
+    let B2 = mapFn(barr(viewK).length ? barr(viewK) : barr(ln.k));
     let mArr = null;
     if(ln.marginKey){
       const raw = arr(ln.marginKey);
@@ -5329,6 +5338,9 @@ function renderComparator(){
         // pl-vemo (Executive Summary) always stays Managerial — do NOT re-render it here
         const _vLabel = PL_VIEW==='managerial'?'Managerial View':'Accounting View';
         try { renderPLVemo('pl-vemo-detail',{simple:false,title:'VCN – <b>P&L Summary ('+_vLabel+')</b>'}); } catch(e){ console.warn(e); }
+        // Also update Financial tab table if it was already rendered
+        if(document.getElementById('pl-financial-table')&&document.getElementById('pl-financial-table').innerHTML)
+          try{ renderPLVemo('pl-financial-table',{simple:false,title:'VCN – <b>Financial P&L</b>'}); }catch(e){ console.warn(e); }
         try { renderPLCharts(); } catch(e){ console.warn(e); }
         try { renderPLBridge(); } catch(e){ console.warn(e); }
         try { renderKPICards(); } catch(e){ console.warn(e); }
