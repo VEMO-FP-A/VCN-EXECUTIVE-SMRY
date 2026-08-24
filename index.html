@@ -612,22 +612,9 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
       <button data-mode="yoy">YoY</button>
       <button data-mode="ytd">YTD</button>
       <button data-mode="bud">vs Budget</button>
-      <button data-mode="custom">Custom Months</button>
     </div>
   </div>
-  <!-- Pickers de meses para Custom (hidden por default) -->
-  <div id="custom-pickers" class="var-filters" style="display:none">
-    <span class="lbl">Month A</span>
-    <select id="cmp-a"></select>
-    <span class="lbl" style="margin-left:8px">Month B</span>
-    <select id="cmp-b"></select>
-    <span class="lbl" style="margin-left:8px;color:var(--tx3);font-weight:500">Show:</span>
-    <div class="vmode">
-      <button class="active" data-cmp="abs">$ Absolute</button>
-      <button data-cmp="pct">% Change</button>
-    </div>
-  </div>
-  <div id="cmp-table" class="vemo-wrap" style="margin-bottom:24px"></div>
+  <div id="cmp-table" class="vemo-wrap" style="display:none"></div>
 
 
   <div class="note">📊 <b>Heatmap</b> — currently in <b id="hm-mode-lbl">MoM</b> mode. Change the mode above to see YoY or YTD.</div>
@@ -637,7 +624,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-24 10:35</div>
+  <div>build 2026-08-24 10:38</div>
 </footer>
 
 <script>
