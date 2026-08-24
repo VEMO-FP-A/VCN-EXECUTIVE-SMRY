@@ -501,7 +501,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
   <div class="tab-bar">
     <button class="active" data-s="exec">Executive Summary</button>
-    <button data-s="ratios">Operational Metrics</button>
+    <button data-s="ratios">Operational &amp; Financial Metrics</button>
     <button data-s="pl">P&amp;L</button>
     <button data-s="var">Variation</button>
   </div>
@@ -548,11 +548,13 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
       <button class="active" data-sub="main">Main KPIs</button>
       <button data-sub="net-kpi">Network KPIs</button>
       <button data-sub="perf-kpi">Main Performance KPIs</button>
+      <button data-sub="financial">Financial</button>
     </div>
   </div>
   <div class="rsub active" data-sub="main"><div id="rat-main"></div></div>
   <div class="rsub" data-sub="net-kpi"><div id="rat-net-kpi"></div></div>
   <div class="rsub" data-sub="perf-kpi"><div id="rat-perf-kpi"></div></div>
+  <div class="rsub" data-sub="financial"><div id="pl-charts" class="charts-grid"></div></div>
 
 
 
@@ -576,9 +578,6 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
       ΔOther COGS includes: Bank &amp; Other Fees, Chargebacks, Charger Insurance, O&amp;M and Hub Maintenance (the remaining COGS lines not broken out as Energy Costs, Energy DAE or Revenue Share).
     </div>
   </div>
-
-  <div class="vemo-section-title">Charts P&amp;L (con Budget y Run-Rate)</div>
-  <div id="pl-charts" class="charts-grid"></div>
 
   <!-- Toggles Historical View + Vista P&L Summary -->
   <div style="background:var(--sf);border:1px solid var(--b);border-radius:var(--r);padding:11px 16px;margin:22px 0 14px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
@@ -624,7 +623,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-24 10:38</div>
+  <div>build 2026-08-24 11:06</div>
 </footer>
 
 <script>
@@ -721,6 +720,7 @@ document.querySelectorAll('#ratios-stabs button').forEach(b=>{
     document.querySelectorAll('[data-s="ratios"] .rsub').forEach(s=>s.classList.remove('active'));
     b.classList.add('active');
     document.querySelector('[data-s="ratios"] .rsub[data-sub="'+b.dataset.sub+'"]').classList.add('active');
+    if(b.dataset.sub==='financial') try{ renderPLCharts(); }catch(e){ console.warn(e); }
   });
 });
 
