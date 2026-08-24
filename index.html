@@ -626,7 +626,7 @@ footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-
 
 <footer class="foot">
   <div>VEMO · VCN · Strictly Private &amp; Confidential</div>
-  <div>build 2026-08-24 11:32</div>
+  <div>build 2026-08-24 11:42</div>
 </footer>
 
 <script>
@@ -725,7 +725,7 @@ document.querySelectorAll('#ratios-stabs button').forEach(b=>{
     document.querySelector('[data-s="ratios"] .rsub[data-sub="'+b.dataset.sub+'"]').classList.add('active');
     if(b.dataset.sub==='financial'){
       try{ renderPLCharts(); }catch(e){ console.warn(e); }
-      try{ renderPLVemo('pl-financial-table',{simple:false,title:'VCN – <b>Financial P&L</b>'}); }catch(e){ console.warn(e); }
+      try{ renderRatioExpandable('pl-financial-table', RATIOS.financial, ''); }catch(e){ console.warn(e); }
     }
   });
 });
@@ -1609,6 +1609,18 @@ function renderPLVemo(targetId, opts){
 // Cada sub-tab: lista de KPI rows
 const RATIOS = {
   main: KPI13,  // KPIs principales del Executive Summary
+  financial: [
+    {l:'Revenue',       keys:['revenue'],             unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'up'},
+    {l:'COGS',          keys:['cogs_total'],           unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'down'},
+    {l:'Opex',          keys:['opex'],                 unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'down'},
+    {l:'Gross Profit',  keys:['gross_profit'],         unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'up'},
+    {l:'SG&A',          keys:['corporate_expenses'],   unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'down'},
+    {l:'EBITDA',        keys:['ebitda'],               unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'up'},
+    {l:'D&A',           keys:['da'],                   unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'down'},
+    {l:'EBIT',          keys:['ebit'],                 unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'up'},
+    {l:'Interest Exp.', keys:['interest_expense'],     unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'down'},
+    {l:'Net Income',    keys:['net_income'],           unit:'MXNm', type:'num', agg:'sum', fmt:'mm', better:'up'},
+  ],
   net_kpi: [
     // Main Network KPIs (screenshot 2)
     {l:'Network Installed Capacity', keys:['installed_capacity_mw'], unit:'MW',      type:'num', agg:'eop', fmt:'n1',  better:'up'},
@@ -1959,7 +1971,7 @@ function renderRatioExpandable(targetId, list, sectionTitle){
   const RS = rangeStart(), RE = rangeEnd();
   let html = sectionTitle ? ('<div class="vemo-section-title">'+sectionTitle+'</div>') : '';
   const hint = mlblShort(RS)+' → '+mlblShort(RE)+' · '+(KPI_RANGE==='ytd'?'YTD '+CURY:'Histórico completo')+' · clic en sección para expandir';
-  html += '<div class="opmet-wrap"><div class="opmet-hd"><span class="t">Tabla de Métricas Operacionales</span><span class="hint">'+hint+'</span></div>';
+  html += '<div class="opmet-wrap"><div class="opmet-hd"><span class="t">Metrics Table</span><span class="hint">'+hint+'</span></div>';
   list.forEach((ki, idx)=>{
     const A=arrCand(ki.keys), B=barrCand(ki.keys);
     if(!A.length){ return; }
@@ -5340,7 +5352,7 @@ function renderComparator(){
         try { renderPLVemo('pl-vemo-detail',{simple:false,title:'VCN – <b>P&L Summary ('+_vLabel+')</b>'}); } catch(e){ console.warn(e); }
         // Also update Financial tab table if it was already rendered
         if(document.getElementById('pl-financial-table')&&document.getElementById('pl-financial-table').innerHTML)
-          try{ renderPLVemo('pl-financial-table',{simple:false,title:'VCN – <b>Financial P&L</b>'}); }catch(e){ console.warn(e); }
+          try{ renderRatioExpandable('pl-financial-table', RATIOS.financial, ''); }catch(e){ console.warn(e); }
         try { renderPLCharts(); } catch(e){ console.warn(e); }
         try { renderPLBridge(); } catch(e){ console.warn(e); }
         try { renderKPICards(); } catch(e){ console.warn(e); }
