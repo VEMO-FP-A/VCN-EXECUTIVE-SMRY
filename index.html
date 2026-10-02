@@ -392,8 +392,43 @@ body{font-family:'Space Grotesk',-apple-system,sans-serif;background:var(--bg);c
 
 footer.foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--b);font-size:10.5px;color:var(--tx3);letter-spacing:0.04em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
 </style>
+
+<style id="vemoGateStyle">
+#vemoGateOverlay{position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;
+background:linear-gradient(135deg,#1F5454,#0E2323);font-family:'Inter','Space Grotesk',-apple-system,sans-serif;}
+#vemoGateOverlay.vemo-hidden{display:none;}
+#vemoGateCard{background:#fff;border-radius:20px;padding:40px 36px;width:340px;max-width:90vw;
+box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center;}
+#vemoGateCard .vg-lock{font-size:34px;margin-bottom:10px;}
+#vemoGateCard h2{font-family:'Poppins','Space Grotesk',sans-serif;font-size:20px;font-weight:700;
+margin:0 0 6px;color:#1F5454;line-height:1.3;}
+#vemoGateCard p{font-size:13px;color:#5C7876;margin:0 0 20px;}
+#vemoGateInput{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;
+border:1px solid #E3ECEC;font-size:15px;text-align:center;letter-spacing:.08em;margin-bottom:14px;outline:none;}
+#vemoGateInput:focus{border-color:#11ABAB;}
+#vemoGateBtn{width:100%;padding:12px 14px;border:none;border-radius:10px;background:#11ABAB;
+color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s ease;}
+#vemoGateBtn:hover{background:#0E8F8F;}
+#vemoGateError{color:#C0392B;font-size:12px;margin-top:10px;min-height:16px;}
+#vemoGateFoot{font-size:11px;color:#9FB3B1;margin-top:18px;}
+@keyframes vgShake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}
+30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
+#vemoGateCard.vg-shake{animation:vgShake .4s;}
+</style>
 </head>
 <body>
+<div id="vemoGateOverlay">
+  <div id="vemoGateCard">
+    <div class="vg-lock">🔒</div>
+    <h2>VCN — Executive Summary</h2>
+    <p>Enter the access code to continue.</p>
+    <input id="vemoGateInput" type="password" placeholder="Access code" autocomplete="off">
+    <button id="vemoGateBtn" type="button">Unlock</button>
+    <div id="vemoGateError"></div>
+    <div id="vemoGateFoot">VEMO · Strictly Private &amp; Confidential</div>
+  </div>
+</div>
+
 
 <!-- ============ Chatbot FLOATING (visible en todas las pestañas) ============ -->
 <div id="chat-fab" class="chat-fab" title="VEMIA · Asistente IA de VEMO">
@@ -5649,6 +5684,40 @@ function init(){
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
 else init();
+</script>
+
+<script id="vemoGateScript">
+(function(){
+  var CODE = "VEM0-2026";
+  var KEY = "vemo_dash_unlocked";
+  var overlay = document.getElementById("vemoGateOverlay");
+  var card = document.getElementById("vemoGateCard");
+  var input = document.getElementById("vemoGateInput");
+  var btn = document.getElementById("vemoGateBtn");
+  var err = document.getElementById("vemoGateError");
+  function unlock(){
+    try{ localStorage.setItem(KEY, "1"); }catch(e){}
+    overlay.classList.add("vemo-hidden");
+  }
+  function tryCode(){
+    if(input.value === CODE){
+      unlock();
+    } else {
+      err.textContent = "Incorrect code. Try again.";
+      card.classList.remove("vg-shake");
+      void card.offsetWidth;
+      card.classList.add("vg-shake");
+      input.value = "";
+      input.focus();
+    }
+  }
+  try{
+    if(localStorage.getItem(KEY) === "1"){ overlay.classList.add("vemo-hidden"); }
+  }catch(e){}
+  btn.addEventListener("click", tryCode);
+  input.addEventListener("keydown", function(e){ if(e.key === "Enter"){ tryCode(); } });
+  setTimeout(function(){ input.focus(); }, 200);
+})();
 </script>
 </body>
 </html>
