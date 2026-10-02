@@ -413,7 +413,10 @@ color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .
 #vemoGateFoot{font-size:11px;color:#9FB3B1;margin-top:18px;}
 @keyframes vgShake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}
 30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
+
 #vemoGateCard.vg-shake{animation:vgShake .4s;}
+body>*:not(#vemoGateOverlay){visibility:hidden !important;}
+body.vemo-unlocked>*:not(#vemoGateOverlay){visibility:visible !important;}
 </style>
 </head>
 <body>
@@ -5698,6 +5701,7 @@ else init();
   function unlock(){
     try{ localStorage.setItem(KEY, "1"); }catch(e){}
     overlay.classList.add("vemo-hidden");
+    document.body.classList.add("vemo-unlocked");
   }
   function tryCode(){
     if(input.value === CODE){
@@ -5712,7 +5716,10 @@ else init();
     }
   }
   try{
-    if(localStorage.getItem(KEY) === "1"){ overlay.classList.add("vemo-hidden"); }
+    if(localStorage.getItem(KEY) === "1"){
+      overlay.classList.add("vemo-hidden");
+      document.body.classList.add("vemo-unlocked");
+    }
   }catch(e){}
   btn.addEventListener("click", tryCode);
   input.addEventListener("keydown", function(e){ if(e.key === "Enter"){ tryCode(); } });
